@@ -11,6 +11,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     
     <style>
+        html {
+            scroll-behavior: smooth;
+        }
+        
         * {
             margin: 0;
             padding: 0;
@@ -394,7 +398,7 @@
                 <input type="date" id="datePicker" style="padding: 0.5rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem;">
             </div>
             
-            <div class="form-section">
+            <div class="form-section" id="section-meds">
                 <h3>💊 Medications & Supplements</h3>
                 <div class="form-grid">
                     <div class="checkbox-group"><input type="checkbox" id="concerta"><label for="concerta">Concerta</label></div>
@@ -418,17 +422,14 @@
                 </div>
             </div>
 
-            <div class="form-section">
+            <div class="form-section" id="section-diet">
                 <h3>🍽️ Diet & Nutrition</h3>
                 <div class="form-grid">
                     <div class="form-group">
                         <label for="weight">Weight</label>
                         <input type="number" id="weight" step="0.1">
                     </div>
-                    <div class="form-group">
-                        <label for="diet">Diet Notes</label>
-                        <input type="text" id="diet">
-                    </div>
+
                     <div class="form-group">
                         <label for="startEating">Start Eating</label>
                         <input type="time" id="startEating">
@@ -446,16 +447,16 @@
                         <label for="fast">Intentional Fast</label>
                     </div>
                     <div class="form-group">
-                        <label for="water">Water (oz)</label>
-                        <input type="number" id="water">
+                        <label for="water">Water (80oz): <span id="waterValue">0</span></label>
+                        <input type="range" id="water" min="0" max="120" value="0" oninput="document.getElementById('waterValue').textContent = this.value">
                     </div>
                     <div class="form-group">
-                        <label for="protein">Protein (g)</label>
-                        <input type="number" id="protein">
+                        <label for="protein">Protein (155g): <span id="proteinValue">0</span></label>
+                        <input type="range" id="protein" min="0" max="300" value="0" oninput="document.getElementById('proteinValue').textContent = this.value">
                     </div>
-                    <div class="form-group">
-                        <label for="carbs">Carbs (g)</label>
-                        <input type="number" id="carbs">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="carbs">
+                        <label for="carbs">Carbs (&lt;50g)</label>
                     </div>
                     <div class="form-group">
                         <label for="alcohol">Alcohol (0-10): <span id="alcoholValue">0</span></label>
@@ -471,12 +472,12 @@
                     </div>
                 </div>
                 <div class="form-group" style="margin-top: 1rem;">
-                    <label for="body">Body Notes (soreness, issues)</label>
-                    <textarea id="body"></textarea>
+                    <label for="diet">Diet Notes</label>
+                    <textarea id="diet" placeholder="What did you eat today?"></textarea>
                 </div>
             </div>
 
-            <div class="form-section">
+            <div class="form-section" id="section-exercise">
                 <h3>💪 Exercise</h3>
                 <div class="form-group">
                     <label for="routine">Routine Description</label>
@@ -484,8 +485,19 @@
                 </div>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label for="exercise">Exercise Type(s)</label>
-                        <input type="text" id="exercise" placeholder="Upper, Lower, Cardio, etc.">
+                        <label for="exercise">Exercise Type</label>
+                        <select id="exercise">
+                            <option value="">Select exercise type...</option>
+                            <option value="bike">Bike</option>
+                            <option value="hike">Hike</option>
+                            <option value="ruck">Ruck</option>
+                            <option value="run">Run</option>
+                            <option value="sauna">Sauna</option>
+                            <option value="sprints">Sprints</option>
+                            <option value="weights">Weights</option>
+                            <option value="walk">Walk</option>
+                            <option value="yoga">Yoga</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label for="duration">Duration (minutes)</label>
@@ -500,9 +512,13 @@
                         <label for="meditate">Meditate</label>
                     </div>
                 </div>
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label for="body">Body Notes (soreness, issues)</label>
+                    <textarea id="body" placeholder="How does your body feel?"></textarea>
+                </div>
             </div>
 
-            <div class="form-section">
+            <div class="form-section" id="section-ailments">
                 <h3>🩺 Ailments (0-10 Scale)</h3>
                 <div class="form-grid">
                     <div class="form-group">
@@ -532,20 +548,20 @@
                 </div>
             </div>
 
-            <div class="form-section">
+            <div class="form-section" id="section-energy">
                 <h3>⚡ Energy Tracking</h3>
                 <button onclick="logEnergy()">Log Current Energy</button>
                 <div id="energyLog" class="energy-log"></div>
             </div>
 
-            <div class="form-section">
+            <div class="form-section" id="section-notes">
                 <h3>📝 Notes</h3>
                 <div class="form-group">
                     <textarea id="notes" placeholder="Any additional notes for the day..."></textarea>
                 </div>
             </div>
 
-            <div class="form-section">
+            <div class="form-section" id="section-media">
                 <h3>📺 Media</h3>
                 <div class="form-grid">
                     <div class="form-group">
@@ -573,8 +589,8 @@
                         <input type="text" id="youtubeTv">
                     </div>
                     <div class="form-group">
-                        <label for="nicotine">Nicotine</label>
-                        <input type="number" id="nicotine">
+                        <label for="nicotine">Nicotine (0-6): <span id="nicotineValue">0</span></label>
+                        <input type="range" id="nicotine" min="0" max="6" value="0" oninput="document.getElementById('nicotineValue').textContent = this.value">
                     </div>
                 </div>
             </div>
@@ -779,7 +795,7 @@
                     fast: document.getElementById('fast').checked,
                     water: document.getElementById('water').value,
                     protein: document.getElementById('protein').value,
-                    carbs: document.getElementById('carbs').value,
+                    carbs: document.getElementById('carbs').checked,
                     alcohol: document.getElementById('alcohol').value,
                     cheatMeal: document.getElementById('cheatMeal').checked,
                     cheatDessert: document.getElementById('cheatDessert').checked,
@@ -863,10 +879,13 @@
                 document.getElementById('startEating').value = entry.startEating || '';
                 document.getElementById('endEating').value = entry.endEating || '';
                 document.getElementById('fast').checked = entry.fast || false;
-                document.getElementById('water').value = entry.water || '';
-                document.getElementById('protein').value = entry.protein || '';
-                document.getElementById('carbs').value = entry.carbs || '';
+                document.getElementById('water').value = entry.water || 0;
+                    document.getElementById('waterValue').textContent = entry.water || 0;
+                document.getElementById('protein').value = entry.protein || 0;
+                    document.getElementById('proteinValue').textContent = entry.protein || 0;
+                document.getElementById('carbs').checked = entry.carbs || false;
                 document.getElementById('alcohol').value = entry.alcohol || 0;
+                    document.getElementById('alcoholValue').textContent = entry.alcohol || 0;
                 document.getElementById('alcoholValue').textContent = entry.alcohol || 0;
                 document.getElementById('cheatMeal').checked = entry.cheatMeal || false;
                 document.getElementById('cheatDessert').checked = entry.cheatDessert || false;
@@ -899,7 +918,8 @@
                 document.getElementById('amazon').value = entry.amazon || '';
                 document.getElementById('youtube').value = entry.youtube || '';
                 document.getElementById('youtubeTv').value = entry.youtubeTv || '';
-                document.getElementById('nicotine').value = entry.nicotine || '';
+                document.getElementById('nicotine').value = entry.nicotine || 0;
+                    document.getElementById('nicotineValue').textContent = entry.nicotine || 0;
 
                 displayEnergyLog(entry.energy || []);
                 calculateFasting();
@@ -1012,7 +1032,7 @@
             const container = document.getElementById('medsHistory');
             let html = '<table class="history-table"><thead><tr><th>Date</th><th>Concerta</th><th>Effexor</th><th>C</th><th>Omega-3</th><th>ZMA</th><th>Creatine</th><th>Action</th></tr></thead><tbody>';
             healthData.forEach(entry => {
-                html += `<tr><td>${entry.date}</td><td>${entry.concerta ? '✓' : ''}</td><td>${entry.effexor ? '✓' : ''}</td><td>${entry.c ? '✓' : ''}</td><td>${entry.omega3 ? '✓' : ''}</td><td>${entry.zma ? '✓' : ''}</td><td>${entry.creatine ? '✓' : ''}</td><td><button onclick="loadDate('${entry.date}')" class="small">Edit</button></td></tr>`;
+                html += `<tr><td>${entry.date}</td><td>${entry.concerta ? '✓' : ''}</td><td>${entry.effexor ? '✓' : ''}</td><td>${entry.c ? '✓' : ''}</td><td>${entry.omega3 ? '✓' : ''}</td><td>${entry.zma ? '✓' : ''}</td><td>${entry.creatine ? '✓' : ''}</td><td><button onclick="loadDate('${entry.date}', 'meds')" class="small">Edit</button></td></tr>`;
             });
             html += '</tbody></table>';
             container.innerHTML = html;
@@ -1022,7 +1042,7 @@
             const container = document.getElementById('dietHistory');
             let html = '<table class="history-table"><thead><tr><th>Date</th><th>Weight</th><th>Diet</th><th>Water</th><th>Protein</th><th>Carbs</th><th>Fasting</th><th>Action</th></tr></thead><tbody>';
             healthData.forEach(entry => {
-                html += `<tr><td>${entry.date}</td><td>${entry.weight || '-'}</td><td>${entry.diet || '-'}</td><td>${entry.water || '-'}</td><td>${entry.protein || '-'}</td><td>${entry.carbs || '-'}</td><td>${entry.fasting || '-'}</td><td><button onclick="loadDate('${entry.date}')" class="small">Edit</button></td></tr>`;
+                html += `<tr><td>${entry.date}</td><td>${entry.weight || '-'}</td><td>${entry.diet ? (entry.diet.substring(0, 30) + '...') : '-'}</td><td>${entry.water || '-'}</td><td>${entry.protein || '-'}</td><td>${entry.carbs ? '✓' : '-'}</td><td>${entry.fasting || '-'}</td><td><button onclick="loadDate('${entry.date}', 'diet')" class="small">Edit</button></td></tr>`;
             });
             html += '</tbody></table>';
             container.innerHTML = html;
@@ -1032,7 +1052,7 @@
             const container = document.getElementById('exerciseHistory');
             let html = '<table class="history-table"><thead><tr><th>Date</th><th>Exercise</th><th>Duration</th><th>Routine</th><th>Stretch</th><th>Meditate</th><th>Action</th></tr></thead><tbody>';
             healthData.forEach(entry => {
-                html += `<tr><td>${entry.date}</td><td>${entry.exercise || '-'}</td><td>${entry.duration || '-'}</td><td>${(entry.routine || '-').substring(0, 50)}</td><td>${entry.stretch ? '✓' : ''}</td><td>${entry.meditate ? '✓' : ''}</td><td><button onclick="loadDate('${entry.date}')" class="small">Edit</button></td></tr>`;
+                html += `<tr><td>${entry.date}</td><td>${entry.exercise || '-'}</td><td>${entry.duration || '-'}</td><td>${(entry.routine || '-').substring(0, 50)}</td><td>${entry.stretch ? '✓' : ''}</td><td>${entry.meditate ? '✓' : ''}</td><td><button onclick="loadDate('${entry.date}', 'exercise')" class="small">Edit</button></td></tr>`;
             });
             html += '</tbody></table>';
             container.innerHTML = html;
@@ -1042,7 +1062,7 @@
             const container = document.getElementById('ailmentsHistory');
             let html = '<table class="history-table"><thead><tr><th>Date</th><th>Headache</th><th>Lightheaded</th><th>Agitated</th><th>Depressed</th><th>Stomach</th><th>Sinuses</th><th>Action</th></tr></thead><tbody>';
             healthData.forEach(entry => {
-                html += `<tr><td>${entry.date}</td><td>${entry.headache || 0}/10</td><td>${entry.lightheaded || 0}/10</td><td>${entry.agitated || 0}/10</td><td>${entry.depressed || 0}/10</td><td>${entry.stomach || 0}/10</td><td>${entry.sinuses || 0}/10</td><td><button onclick="loadDate('${entry.date}')" class="small">Edit</button></td></tr>`;
+                html += `<tr><td>${entry.date}</td><td>${entry.headache || 0}/10</td><td>${entry.lightheaded || 0}/10</td><td>${entry.agitated || 0}/10</td><td>${entry.depressed || 0}/10</td><td>${entry.stomach || 0}/10</td><td>${entry.sinuses || 0}/10</td><td><button onclick="loadDate('${entry.date}', 'ailments')" class="small">Edit</button></td></tr>`;
             });
             html += '</tbody></table>';
             container.innerHTML = html;
@@ -1068,7 +1088,7 @@
             let html = '<table class="history-table"><thead><tr><th>Date</th><th>Notes</th><th>Action</th></tr></thead><tbody>';
             healthData.forEach(entry => {
                 if (entry.notes) {
-                    html += `<tr><td>${entry.date}</td><td>${entry.notes}</td><td><button onclick="loadDate('${entry.date}')" class="small">Edit</button></td></tr>`;
+                    html += `<tr><td>${entry.date}</td><td>${entry.notes}</td><td><button onclick="loadDate('${entry.date}', 'notes')" class="small">Edit</button></td></tr>`;
                 }
             });
             html += '</tbody></table>';
@@ -1077,9 +1097,9 @@
 
         function loadMediaHistory() {
             const container = document.getElementById('mediaHistory');
-            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Apple TV+</th><th>Netflix</th><th>Paramount</th><th>Amazon</th><th>YouTube</th><th>YouTube TV</th><th>Action</th></tr></thead><tbody>';
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Apple TV+</th><th>Netflix</th><th>Paramount</th><th>Amazon</th><th>YouTube</th><th>YouTube TV</th><th>Nicotine</th><th>Action</th></tr></thead><tbody>';
             healthData.forEach(entry => {
-                html += `<tr><td>${entry.date}</td><td>${entry.appleTv || '-'}</td><td>${entry.netflix || '-'}</td><td>${entry.paramount || '-'}</td><td>${entry.amazon || '-'}</td><td>${entry.youtube || '-'}</td><td>${entry.youtubeTv || '-'}</td><td><button onclick="loadDate('${entry.date}')" class="small">Edit</button></td></tr>`;
+                html += `<tr><td>${entry.date}</td><td>${entry.appleTv || '-'}</td><td>${entry.netflix || '-'}</td><td>${entry.paramount || '-'}</td><td>${entry.amazon || '-'}</td><td>${entry.youtube || '-'}</td><td>${entry.youtubeTv || '-'}</td><td>${entry.nicotine || 0}/6</td><td><button onclick="loadDate('${entry.date}', 'media')" class="small">Edit</button></td></tr>`;
             });
             html += '</tbody></table>';
             container.innerHTML = html;
@@ -1095,11 +1115,21 @@
             container.innerHTML = html;
         }
 
-        function loadDate(date) {
+        function loadDate(date, section) {
             currentDate = date;
             updateCurrentDateDisplay();
             showView('daily');
             loadToday();
+            
+            // Scroll to section if specified
+            if (section) {
+                setTimeout(() => {
+                    const element = document.getElementById('section-' + section);
+                    if (element) {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }, 100);
+            }
         }
 
         // CSV Import - Upload to Firebase
