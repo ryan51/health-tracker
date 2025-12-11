@@ -462,6 +462,10 @@
                         <label for="alcohol">Alcohol (0-10): <span id="alcoholValue">0</span></label>
                         <input type="range" id="alcohol" min="0" max="10" value="0" oninput="document.getElementById('alcoholValue').textContent = this.value">
                     </div>
+                    <div class="form-group">
+                        <label for="nicotine">Nicotine (0-6): <span id="nicotineValue">0</span></label>
+                        <input type="range" id="nicotine" min="0" max="6" value="0" oninput="document.getElementById('nicotineValue').textContent = this.value">
+                    </div>
                     <div class="checkbox-group">
                         <input type="checkbox" id="cheatMeal">
                         <label for="cheatMeal">Cheat Meal</label>
@@ -500,8 +504,8 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="duration">Duration (minutes)</label>
-                        <input type="number" id="duration">
+                        <label for="duration">Duration (HH:MM)</label>
+                        <input type="time" id="duration">
                     </div>
                     <div class="checkbox-group">
                         <input type="checkbox" id="stretch">
@@ -565,33 +569,30 @@
                 <h3>📺 Media</h3>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label for="appleTv">Apple TV+</label>
-                        <input type="text" id="appleTv">
+                        <label for="appleTv">Apple TV+ (hours)</label>
+                        <input type="number" id="appleTv" step="0.1" min="0">
                     </div>
                     <div class="form-group">
-                        <label for="netflix">Netflix</label>
-                        <input type="text" id="netflix">
+                        <label for="netflix">Netflix (hours)</label>
+                        <input type="number" id="netflix" step="0.1" min="0">
                     </div>
                     <div class="form-group">
-                        <label for="paramount">Paramount+</label>
-                        <input type="text" id="paramount">
+                        <label for="paramount">Paramount+ (hours)</label>
+                        <input type="number" id="paramount" step="0.1" min="0">
                     </div>
                     <div class="form-group">
-                        <label for="amazon">Amazon Prime</label>
-                        <input type="text" id="amazon">
+                        <label for="amazon">Amazon Prime (hours)</label>
+                        <input type="number" id="amazon" step="0.1" min="0">
                     </div>
                     <div class="form-group">
-                        <label for="youtube">YouTube</label>
-                        <input type="text" id="youtube">
+                        <label for="youtube">YouTube (hours)</label>
+                        <input type="number" id="youtube" step="0.1" min="0">
                     </div>
                     <div class="form-group">
-                        <label for="youtubeTv">YouTube TV</label>
-                        <input type="text" id="youtubeTv">
+                        <label for="youtubeTv">YouTube TV (hours)</label>
+                        <input type="number" id="youtubeTv" step="0.1" min="0">
                     </div>
-                    <div class="form-group">
-                        <label for="nicotine">Nicotine (0-6): <span id="nicotineValue">0</span></label>
-                        <input type="range" id="nicotine" min="0" max="6" value="0" oninput="document.getElementById('nicotineValue').textContent = this.value">
-                    </div>
+
                 </div>
             </div>
 
@@ -1040,9 +1041,9 @@
 
         function loadDietHistory() {
             const container = document.getElementById('dietHistory');
-            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Weight</th><th>Diet</th><th>Water</th><th>Protein</th><th>Carbs</th><th>Fasting</th><th>Action</th></tr></thead><tbody>';
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Weight</th><th>Diet</th><th>Water</th><th>Protein</th><th>Carbs</th><th>Alcohol</th><th>Nicotine</th><th>Fasting</th><th>Action</th></tr></thead><tbody>';
             healthData.forEach(entry => {
-                html += `<tr><td>${entry.date}</td><td>${entry.weight || '-'}</td><td>${entry.diet ? (entry.diet.substring(0, 30) + '...') : '-'}</td><td>${entry.water || '-'}</td><td>${entry.protein || '-'}</td><td>${entry.carbs ? '✓' : '-'}</td><td>${entry.fasting || '-'}</td><td><button onclick="loadDate('${entry.date}', 'diet')" class="small">Edit</button></td></tr>`;
+                html += `<tr><td>${entry.date}</td><td>${entry.weight || '-'}</td><td>${entry.diet ? (entry.diet.substring(0, 30) + '...') : '-'}</td><td>${entry.water || '-'}</td><td>${entry.protein || '-'}</td><td>${entry.carbs ? '✓' : '-'}</td><td>${entry.alcohol || 0}/10</td><td>${entry.nicotine || 0}/6</td><td>${entry.fasting || '-'}</td><td><button onclick="loadDate('${entry.date}', 'diet')" class="small">Edit</button></td></tr>`;
             });
             html += '</tbody></table>';
             container.innerHTML = html;
@@ -1097,9 +1098,9 @@
 
         function loadMediaHistory() {
             const container = document.getElementById('mediaHistory');
-            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Apple TV+</th><th>Netflix</th><th>Paramount</th><th>Amazon</th><th>YouTube</th><th>YouTube TV</th><th>Nicotine</th><th>Action</th></tr></thead><tbody>';
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Apple TV+</th><th>Netflix</th><th>Paramount</th><th>Amazon</th><th>YouTube</th><th>YouTube TV</th><th>Action</th></tr></thead><tbody>';
             healthData.forEach(entry => {
-                html += `<tr><td>${entry.date}</td><td>${entry.appleTv || '-'}</td><td>${entry.netflix || '-'}</td><td>${entry.paramount || '-'}</td><td>${entry.amazon || '-'}</td><td>${entry.youtube || '-'}</td><td>${entry.youtubeTv || '-'}</td><td>${entry.nicotine || 0}/6</td><td><button onclick="loadDate('${entry.date}', 'media')" class="small">Edit</button></td></tr>`;
+                html += `<tr><td>${entry.date}</td><td>${entry.appleTv || '-'}</td><td>${entry.netflix || '-'}</td><td>${entry.paramount || '-'}</td><td>${entry.amazon || '-'}</td><td>${entry.youtube || '-'}</td><td>${entry.youtubeTv || '-'}</td><td><button onclick="loadDate('${entry.date}', 'media')" class="small">Edit</button></td></tr>`;
             });
             html += '</tbody></table>';
             container.innerHTML = html;
