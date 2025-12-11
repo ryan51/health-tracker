@@ -363,6 +363,9 @@
         <div class="sync-notice">
             <h2>🔥 Firebase Cloud Sync Enabled</h2>
             <p>All changes save automatically and sync across all your devices in real-time!</p>
+            <div style="margin-top: 1rem;">
+                <button onclick="importCSV()" style="background: white; color: #10b981; font-weight: bold;">📥 Import Historical CSV</button>
+            </div>
         </div>
 
         <!-- Navigation -->
@@ -1073,6 +1076,144 @@
             updateCurrentDateDisplay();
             showView('daily');
             loadToday();
+        }
+
+        // CSV Import - Upload to Firebase
+        function importCSV() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.csv';
+            input.onchange = async function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const confirmImport = confirm(`Import CSV file "${file.name}"?\n\nThis will add all entries from the CSV to Firebase.\nExisting entries with the same date will be updated.`);
+                if (!confirmImport) return;
+                
+                updateSyncStatus('syncing', 'Importing CSV...');
+                
+                const reader = new FileReader();
+                reader.onload = async function(event) {
+                    try {
+                        const text = event.target.result;
+                        const lines = text.split('\n');
+                        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+                        
+                        let importCount = 0;
+                        let updateCount = 0;
+                        
+                        for (let i = 1; i < lines.length; i++) {
+                            if (!lines[i].trim()) continue;
+                            
+                            // Parse CSV line (handle quoted fields)
+                            const values = [];
+                            let currentValue = '';
+                            let insideQuotes = false;
+                            
+                            for (let char of lines[i]) {
+                                if (char === '"') {
+                                    insideQuotes = !insideQuotes;
+                                } else if (char === ',' && !insideQuotes) {
+                                    values.push(currentValue.trim());
+                                    currentValue = '';
+                                } else {
+                                    currentValue += char;
+                                }
+                            }
+                            values.push(currentValue.trim());
+                            
+                            if (values.length < 10) continue; // Skip malformed rows
+                            
+                            // Map values to entry object
+                            const entry = {
+                                date: values[0],
+                                concerta: values[1]?.toLowerCase() === 'true',
+                                effexor: values[2]?.toLowerCase() === 'true',
+                                c: values[3]?.toLowerCase() === 'true',
+                                omega3: values[4]?.toLowerCase() === 'true',
+                                zma: values[5]?.toLowerCase() === 'true',
+                                creatine: values[6]?.toLowerCase() === 'true',
+                                no2: values[7]?.toLowerCase() === 'true',
+                                probiotic: values[8]?.toLowerCase() === 'true',
+                                lz: values[9]?.toLowerCase() === 'true',
+                                d3k: values[10]?.toLowerCase() === 'true',
+                                melatonin: values[11]?.toLowerCase() === 'true',
+                                mblue: values[12]?.toLowerCase() === 'true',
+                                potassium: values[13]?.toLowerCase() === 'true',
+                                boost: values[14]?.toLowerCase() === 'true',
+                                multi: values[15]?.toLowerCase() === 'true',
+                                bcaa: values[16]?.toLowerCase() === 'true',
+                                adrenal: values[17]?.toLowerCase() === 'true',
+                                msm: values[18]?.toLowerCase() === 'true',
+                                weight: values[19] || '',
+                                diet: values[20] || '',
+                                startEating: values[21] || '',
+                                endEating: values[22] || '',
+                                fasting: values[23] || '',
+                                fast: values[24]?.toLowerCase() === 'true',
+                                water: values[25] || '',
+                                protein: values[26] || '',
+                                carbs: values[27] || '',
+                                alcohol: values[28] || '0',
+                                cheatMeal: values[29]?.toLowerCase() === 'true',
+                                cheatDessert: values[30]?.toLowerCase() === 'true',
+                                body: values[31]?.replace(/^"|"$/g, '') || '',
+                                routine: values[32]?.replace(/^"|"$/g, '') || '',
+                                exercise: values[33] || '',
+                                duration: values[34] || '',
+                                stretch: values[35]?.toLowerCase() === 'true',
+                                meditate: values[36]?.toLowerCase() === 'true',
+                                headache: values[37] || '0',
+                                lightheaded: values[38] || '0',
+                                agitated: values[39] || '0',
+                                depressed: values[40] || '0',
+                                stomach: values[41] || '0',
+                                sinuses: values[42] || '0',
+                                notes: values[43]?.replace(/^"|"$/g, '') || '',
+                                appleTv: values[44] || '',
+                                netflix: values[45] || '',
+                                paramount: values[46] || '',
+                                amazon: values[47] || '',
+                                youtube: values[48] || '',
+                                youtubeTv: values[49] || '',
+                                nicotine: values[50] || '',
+                                energy: [],
+                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                            };
+                            
+                            // Check if entry exists for this date
+                            const existingEntry = healthData.find(e => e.date === entry.date);
+                            
+                            if (existingEntry && existingEntry.id) {
+                                // Update existing
+                                await healthCollection.doc(existingEntry.id).update(entry);
+                                updateCount++;
+                            } else {
+                                // Create new
+                                await healthCollection.add(entry);
+                                importCount++;
+                            }
+                            
+                            // Update progress
+                            updateSyncStatus('syncing', `Importing... ${importCount + updateCount}/${lines.length - 1}`);
+                        }
+                        
+                        updateSyncStatus('', 'Synced');
+                        alert(`Import complete!\n\nNew entries: ${importCount}\nUpdated entries: ${updateCount}\nTotal: ${importCount + updateCount}`);
+                        
+                        // Reload data
+                        await loadDataFromFirebase();
+                        loadToday();
+                        
+                    } catch (error) {
+                        console.error('Import error:', error);
+                        updateSyncStatus('offline', 'Import failed');
+                        alert('Error importing CSV: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
         }
 
         // CSV Export
