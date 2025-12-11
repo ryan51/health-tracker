@@ -150,6 +150,11 @@
             background: #dc2626;
         }
 
+        button.small {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
         .nav-tabs {
             display: flex;
             gap: 0.5rem;
@@ -384,6 +389,10 @@
         <!-- Daily Entry View -->
         <div id="dailyView" class="view active">
             <h2>📝 Daily Entry for <span id="currentDateDisplay"></span></h2>
+            <div style="margin-bottom: 1.5rem;">
+                <label for="datePicker" style="font-weight: 600; margin-right: 0.5rem;">Jump to date:</label>
+                <input type="date" id="datePicker" style="padding: 0.5rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem;">
+            </div>
             
             <div class="form-section">
                 <h3>💊 Medications & Supplements</h3>
@@ -430,7 +439,7 @@
                     </div>
                     <div class="form-group">
                         <label>Fasting Hours (auto-calc)</label>
-                        <input type="text" id="fasting" readonly>
+                        <div id="fasting" style="padding: 0.75rem; background: var(--surface); border-radius: 8px; font-weight: 600; color: var(--primary);">--</div>
                     </div>
                     <div class="checkbox-group">
                         <input type="checkbox" id="fast">
@@ -719,8 +728,21 @@
 
         // Update current date display
         function updateCurrentDateDisplay() {
-            document.getElementById('currentDateDisplay').textContent = new Date(currentDate).toLocaleDateString();
+            document.getElementById('currentDateDisplay').textContent = currentDate;
+            document.getElementById('datePicker').value = currentDate;
         }
+        
+        // Date picker handler
+        document.addEventListener('DOMContentLoaded', function() {
+            const datePicker = document.getElementById('datePicker');
+            if (datePicker) {
+                datePicker.addEventListener('change', function() {
+                    currentDate = this.value;
+                    updateCurrentDateDisplay();
+                    loadToday();
+                });
+            }
+        });
 
         // Save entry to Firebase
         async function saveEntry() {
@@ -753,7 +775,7 @@
                     diet: document.getElementById('diet').value,
                     startEating: document.getElementById('startEating').value,
                     endEating: document.getElementById('endEating').value,
-                    fasting: document.getElementById('fasting').value,
+                    fasting: document.getElementById('fasting').textContent,
                     fast: document.getElementById('fast').checked,
                     water: document.getElementById('water').value,
                     protein: document.getElementById('protein').value,
@@ -908,7 +930,9 @@
                 const endMinutes = parseInt(end.split(':')[0]) * 60 + parseInt(end.split(':')[1]);
                 const eatingWindow = (endMinutes - startMinutes) / 60;
                 const fastingHours = 24 - eatingWindow;
-                document.getElementById('fasting').value = fastingHours.toFixed(1) + ' hours';
+                document.getElementById('fasting').textContent = fastingHours.toFixed(1) + ' hours';
+            } else {
+                document.getElementById('fasting').textContent = '--';
             }
         }
 
@@ -986,9 +1010,9 @@
         // History views
         function loadMedsHistory() {
             const container = document.getElementById('medsHistory');
-            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Concerta</th><th>Effexor</th><th>C</th><th>Omega-3</th><th>ZMA</th><th>Creatine</th></tr></thead><tbody>';
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Concerta</th><th>Effexor</th><th>C</th><th>Omega-3</th><th>ZMA</th><th>Creatine</th><th>Action</th></tr></thead><tbody>';
             healthData.forEach(entry => {
-                html += `<tr><td>${entry.date}</td><td>${entry.concerta ? '✓' : ''}</td><td>${entry.effexor ? '✓' : ''}</td><td>${entry.c ? '✓' : ''}</td><td>${entry.omega3 ? '✓' : ''}</td><td>${entry.zma ? '✓' : ''}</td><td>${entry.creatine ? '✓' : ''}</td></tr>`;
+                html += `<tr><td>${entry.date}</td><td>${entry.concerta ? '✓' : ''}</td><td>${entry.effexor ? '✓' : ''}</td><td>${entry.c ? '✓' : ''}</td><td>${entry.omega3 ? '✓' : ''}</td><td>${entry.zma ? '✓' : ''}</td><td>${entry.creatine ? '✓' : ''}</td><td><button onclick="loadDate('${entry.date}')" class="small">Edit</button></td></tr>`;
             });
             html += '</tbody></table>';
             container.innerHTML = html;
@@ -996,9 +1020,9 @@
 
         function loadDietHistory() {
             const container = document.getElementById('dietHistory');
-            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Weight</th><th>Diet</th><th>Water</th><th>Protein</th><th>Carbs</th><th>Fasting</th></tr></thead><tbody>';
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Weight</th><th>Diet</th><th>Water</th><th>Protein</th><th>Carbs</th><th>Fasting</th><th>Action</th></tr></thead><tbody>';
             healthData.forEach(entry => {
-                html += `<tr><td>${entry.date}</td><td>${entry.weight || '-'}</td><td>${entry.diet || '-'}</td><td>${entry.water || '-'}</td><td>${entry.protein || '-'}</td><td>${entry.carbs || '-'}</td><td>${entry.fasting || '-'}</td></tr>`;
+                html += `<tr><td>${entry.date}</td><td>${entry.weight || '-'}</td><td>${entry.diet || '-'}</td><td>${entry.water || '-'}</td><td>${entry.protein || '-'}</td><td>${entry.carbs || '-'}</td><td>${entry.fasting || '-'}</td><td><button onclick="loadDate('${entry.date}')" class="small">Edit</button></td></tr>`;
             });
             html += '</tbody></table>';
             container.innerHTML = html;
@@ -1006,9 +1030,9 @@
 
         function loadExerciseHistory() {
             const container = document.getElementById('exerciseHistory');
-            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Exercise</th><th>Duration</th><th>Routine</th><th>Stretch</th><th>Meditate</th></tr></thead><tbody>';
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Exercise</th><th>Duration</th><th>Routine</th><th>Stretch</th><th>Meditate</th><th>Action</th></tr></thead><tbody>';
             healthData.forEach(entry => {
-                html += `<tr><td>${entry.date}</td><td>${entry.exercise || '-'}</td><td>${entry.duration || '-'}</td><td>${(entry.routine || '-').substring(0, 50)}</td><td>${entry.stretch ? '✓' : ''}</td><td>${entry.meditate ? '✓' : ''}</td></tr>`;
+                html += `<tr><td>${entry.date}</td><td>${entry.exercise || '-'}</td><td>${entry.duration || '-'}</td><td>${(entry.routine || '-').substring(0, 50)}</td><td>${entry.stretch ? '✓' : ''}</td><td>${entry.meditate ? '✓' : ''}</td><td><button onclick="loadDate('${entry.date}')" class="small">Edit</button></td></tr>`;
             });
             html += '</tbody></table>';
             container.innerHTML = html;
@@ -1016,9 +1040,9 @@
 
         function loadAilmentsHistory() {
             const container = document.getElementById('ailmentsHistory');
-            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Headache</th><th>Lightheaded</th><th>Agitated</th><th>Depressed</th><th>Stomach</th><th>Sinuses</th></tr></thead><tbody>';
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Headache</th><th>Lightheaded</th><th>Agitated</th><th>Depressed</th><th>Stomach</th><th>Sinuses</th><th>Action</th></tr></thead><tbody>';
             healthData.forEach(entry => {
-                html += `<tr><td>${entry.date}</td><td>${entry.headache || 0}/10</td><td>${entry.lightheaded || 0}/10</td><td>${entry.agitated || 0}/10</td><td>${entry.depressed || 0}/10</td><td>${entry.stomach || 0}/10</td><td>${entry.sinuses || 0}/10</td></tr>`;
+                html += `<tr><td>${entry.date}</td><td>${entry.headache || 0}/10</td><td>${entry.lightheaded || 0}/10</td><td>${entry.agitated || 0}/10</td><td>${entry.depressed || 0}/10</td><td>${entry.stomach || 0}/10</td><td>${entry.sinuses || 0}/10</td><td><button onclick="loadDate('${entry.date}')" class="small">Edit</button></td></tr>`;
             });
             html += '</tbody></table>';
             container.innerHTML = html;
@@ -1041,10 +1065,10 @@
 
         function loadNotesHistory() {
             const container = document.getElementById('notesHistory');
-            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Notes</th></tr></thead><tbody>';
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Notes</th><th>Action</th></tr></thead><tbody>';
             healthData.forEach(entry => {
                 if (entry.notes) {
-                    html += `<tr><td>${entry.date}</td><td>${entry.notes}</td></tr>`;
+                    html += `<tr><td>${entry.date}</td><td>${entry.notes}</td><td><button onclick="loadDate('${entry.date}')" class="small">Edit</button></td></tr>`;
                 }
             });
             html += '</tbody></table>';
@@ -1053,9 +1077,9 @@
 
         function loadMediaHistory() {
             const container = document.getElementById('mediaHistory');
-            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Apple TV+</th><th>Netflix</th><th>Paramount</th><th>Amazon</th><th>YouTube</th><th>YouTube TV</th></tr></thead><tbody>';
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Apple TV+</th><th>Netflix</th><th>Paramount</th><th>Amazon</th><th>YouTube</th><th>YouTube TV</th><th>Action</th></tr></thead><tbody>';
             healthData.forEach(entry => {
-                html += `<tr><td>${entry.date}</td><td>${entry.appleTv || '-'}</td><td>${entry.netflix || '-'}</td><td>${entry.paramount || '-'}</td><td>${entry.amazon || '-'}</td><td>${entry.youtube || '-'}</td><td>${entry.youtubeTv || '-'}</td></tr>`;
+                html += `<tr><td>${entry.date}</td><td>${entry.appleTv || '-'}</td><td>${entry.netflix || '-'}</td><td>${entry.paramount || '-'}</td><td>${entry.amazon || '-'}</td><td>${entry.youtube || '-'}</td><td>${entry.youtubeTv || '-'}</td><td><button onclick="loadDate('${entry.date}')" class="small">Edit</button></td></tr>`;
             });
             html += '</tbody></table>';
             container.innerHTML = html;
@@ -1063,9 +1087,9 @@
 
         function loadCompleteHistory() {
             const container = document.getElementById('completeHistory');
-            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Weight</th><th>Exercise</th><th>Fasting</th><th>Notes</th></tr></thead><tbody>';
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Weight</th><th>Exercise</th><th>Fasting</th><th>Notes</th><th>Action</th></tr></thead><tbody>';
             healthData.forEach(entry => {
-                html += `<tr onclick="loadDate('${entry.date}')" style="cursor: pointer;"><td>${entry.date}</td><td>${entry.weight || '-'}</td><td>${entry.exercise || '-'}</td><td>${entry.fasting || '-'}</td><td>${entry.notes ? entry.notes.substring(0, 50) + '...' : '-'}</td></tr>`;
+                html += `<tr><td>${entry.date}</td><td>${entry.weight || '-'}</td><td>${entry.exercise || '-'}</td><td>${entry.fasting || '-'}</td><td>${entry.notes ? entry.notes.substring(0, 50) + '...' : '-'}</td><td><button onclick="loadDate('${entry.date}')" class="small">Edit</button></td></tr>`;
             });
             html += '</tbody></table>';
             container.innerHTML = html;
