@@ -1,0 +1,1723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Health Tracker - Cloud Sync</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --secondary: #64748b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg: #ffffff;
+            --surface: #f8fafc;
+            --text: #0f172a;
+            --border: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Helvetica Now Display', Helvetica, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--surface);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            color: white;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+
+        .settings-link {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .settings-link:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .sync-status {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.875rem;
+        }
+
+        .sync-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        .sync-indicator.syncing {
+            background: var(--warning);
+        }
+
+        .sync-indicator.offline {
+            background: var(--secondary);
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        .sync-notice {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            text-align: center;
+        }
+
+        .sync-notice h2 {
+            margin-bottom: 0.5rem;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+        button.secondary {
+            background: var(--secondary);
+        }
+
+        button.secondary:hover {
+            background: #475569;
+        }
+
+        button.success {
+            background: var(--success);
+        }
+
+        button.success:hover {
+            background: #059669;
+        }
+
+        button.danger {
+            background: var(--danger);
+        }
+
+        button.danger:hover {
+            background: #dc2626;
+        }
+
+        button.small {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+            padding: 0.5rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+        }
+
+        .nav-tabs button {
+            padding: 0.75rem 1.25rem;
+            background: transparent;
+            color: var(--secondary);
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            white-space: nowrap;
+        }
+
+        .nav-tabs button:hover {
+            background: var(--surface);
+            color: var(--primary);
+            transform: none;
+        }
+
+        .nav-tabs button.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .view {
+            display: none;
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        .view h2 {
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+        }
+
+        .form-section {
+            margin-bottom: 2rem;
+        }
+
+        .form-section h3 {
+            margin-bottom: 1rem;
+            color: var(--primary);
+            font-size: 1.125rem;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .energy-log {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--surface);
+            border-radius: 8px;
+        }
+
+        .energy-entry {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background: white;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+        }
+
+        .energy-entry span {
+            font-weight: 600;
+        }
+
+        .energy-entry button {
+            background: var(--danger);
+            padding: 0.25rem 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            overflow-x: auto;
+            display: block;
+        }
+
+        .history-table th,
+        .history-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .history-table th {
+            background: var(--surface);
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+
+        .history-table tr:hover {
+            background: var(--surface);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0.5rem;
+            }
+
+            .view {
+                padding: 1rem;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .action-buttons button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>📊 Health Tracker</h1>
+            <button onclick="showView('settings')" class="settings-link">
+                ⚙️ Settings
+            </button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Navigation -->
+        <div class="nav-tabs">
+            <button class="active" onclick="showView('daily')">📝 Daily Entry</button>
+            <button onclick="showView('meds')">💊 Medications</button>
+            <button onclick="showView('diet')">🍽️ Diet</button>
+            <button onclick="showView('exercise')">💪 Exercise</button>
+            <button onclick="showView('workout')">🏋️ Weights</button>
+            <button onclick="showView('ailments')">🩺 Ailments</button>
+            <button onclick="showView('energy')">⚡ Energy</button>
+            <button onclick="showView('notes')">📝 Notes</button>
+            <button onclick="showView('media')">📺 Media</button>
+        </div>
+
+        <!-- Daily Entry View -->
+        <div id="dailyView" class="view active">
+            <h2>📝 Daily Entry for <span id="currentDateDisplay"></span></h2>
+            <div style="margin-bottom: 1.5rem;">
+                <label for="datePicker" style="font-weight: 600; margin-right: 0.5rem;">Jump to date:</label>
+                <input type="date" id="datePicker" style="padding: 0.5rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem;">
+            </div>
+            
+            <div class="form-section" id="section-meds">
+                <h3>💊 Medications & Supplements</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem;">
+                    <!-- Column 1: Focus -->
+                    <div>
+                        <h4 style="margin-bottom: 0.75rem; color: var(--secondary); font-size: 0.875rem; text-transform: uppercase;">Focus</h4>
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <div class="checkbox-group"><input type="checkbox" id="concerta"><label for="concerta">Concerta</label></div>
+                            <div class="checkbox-group"><input type="checkbox" id="boost"><label for="boost">Boost</label></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Column 2: Vitamins & Daily -->
+                    <div>
+                        <h4 style="margin-bottom: 0.75rem; color: var(--secondary); font-size: 0.875rem; text-transform: uppercase;">Vitamins & Daily</h4>
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <div class="checkbox-group"><input type="checkbox" id="c"><label for="c">Vitamin C</label></div>
+                            <div class="checkbox-group"><input type="checkbox" id="omega3"><label for="omega3">Omega-3</label></div>
+                            <div class="checkbox-group"><input type="checkbox" id="zma"><label for="zma">ZMA (ON)</label></div>
+                            <div class="checkbox-group"><input type="checkbox" id="no2"><label for="no2">NO2</label></div>
+                            <div class="checkbox-group"><input type="checkbox" id="lz"><label for="lz">L/Z (NOW)</label></div>
+                            <div class="checkbox-group"><input type="checkbox" id="d3k"><label for="d3k">D3/K</label></div>
+                            <div class="checkbox-group"><input type="checkbox" id="potassium"><label for="potassium">Potassium</label></div>
+                            <div class="checkbox-group"><input type="checkbox" id="probiotic"><label for="probiotic">Probiotic</label></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Column 3: Performance & Sleep -->
+                    <div>
+                        <h4 style="margin-bottom: 0.75rem; color: var(--secondary); font-size: 0.875rem; text-transform: uppercase;">Performance & Sleep</h4>
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <div class="checkbox-group"><input type="checkbox" id="creatine"><label for="creatine">Creatine</label></div>
+                            <div class="checkbox-group"><input type="checkbox" id="melatonin"><label for="melatonin">Melatonin</label></div>
+                            <div class="checkbox-group"><input type="checkbox" id="mblue"><label for="mblue">M-Blue</label></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Hidden fields for data compatibility -->
+                <input type="checkbox" id="effexor" style="display: none;">
+                <input type="checkbox" id="multi" style="display: none;">
+                <input type="checkbox" id="bcaa" style="display: none;">
+                <input type="checkbox" id="adrenal" style="display: none;">
+                <input type="checkbox" id="msm" style="display: none;">
+            </div>
+
+            <div class="form-section" id="section-diet">
+                <h3>🍽️ Diet & Nutrition</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="weight">Weight</label>
+                        <input type="number" id="weight" step="0.1">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="startEating">Start Eating</label>
+                        <input type="time" id="startEating">
+                    </div>
+                    <div class="form-group">
+                        <label for="endEating">End Eating</label>
+                        <input type="time" id="endEating">
+                    </div>
+                    <div class="form-group">
+                        <label>Fasting Hours (auto-calc)</label>
+                        <div id="fasting" style="padding: 0.75rem; background: var(--surface); border-radius: 8px; font-weight: 600; color: var(--primary);">--</div>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="fast">
+                        <label for="fast">Intentional Fast</label>
+                    </div>
+                    <div class="form-group">
+                        <label for="water">Water (80oz): <span id="waterValue">0</span></label>
+                        <input type="range" id="water" min="0" max="120" value="0" oninput="document.getElementById('waterValue').textContent = this.value">
+                    </div>
+                    <div class="form-group">
+                        <label for="protein">Protein (155g): <span id="proteinValue">0</span></label>
+                        <input type="range" id="protein" min="0" max="300" value="0" oninput="document.getElementById('proteinValue').textContent = this.value">
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="carbs">
+                        <label for="carbs">Carbs (&lt;50g)</label>
+                    </div>
+                    <div class="form-group">
+                        <label for="alcohol">Alcohol (0-10): <span id="alcoholValue">0</span></label>
+                        <input type="range" id="alcohol" min="0" max="10" value="0" oninput="document.getElementById('alcoholValue').textContent = this.value">
+                    </div>
+                    <div class="form-group">
+                        <label for="nicotine">Nicotine (0-6): <span id="nicotineValue">0</span></label>
+                        <input type="range" id="nicotine" min="0" max="6" value="0" oninput="document.getElementById('nicotineValue').textContent = this.value">
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="cheatMeal">
+                        <label for="cheatMeal">Cheat Meal</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="cheatDessert">
+                        <label for="cheatDessert">Cheat Dessert</label>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label for="diet">Diet Notes</label>
+                    <textarea id="diet" placeholder="What did you eat today?"></textarea>
+                </div>
+            </div>
+
+            <div class="form-section" id="section-exercise">
+                <h3>💪 Exercise</h3>
+                <div class="form-group">
+                    <label for="routine">Routine Description</label>
+                    <textarea id="routine"></textarea>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="exercise">Exercise Type</label>
+                        <select id="exercise">
+                            <option value="">Select exercise type...</option>
+                            <option value="bike">Bike</option>
+                            <option value="hike">Hike</option>
+                            <option value="ruck">Ruck</option>
+                            <option value="run">Run</option>
+                            <option value="sauna">Sauna</option>
+                            <option value="sprints">Sprints</option>
+                            <option value="weights">Weights</option>
+                            <option value="walk">Walk</option>
+                            <option value="yoga">Yoga</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="duration">Duration (HH:MM)</label>
+                        <input type="time" id="duration">
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="stretch">
+                        <label for="stretch">Stretch</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="meditate">
+                        <label for="meditate">Meditate</label>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label for="body">Body Notes (soreness, issues)</label>
+                    <textarea id="body" placeholder="How does your body feel?"></textarea>
+                </div>
+            </div>
+
+            <div class="form-section" id="section-ailments">
+                <h3>🩺 Ailments (0-10 Scale)</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="headache">Headache: <span id="headacheValue">0</span></label>
+                        <input type="range" id="headache" min="0" max="10" value="0" oninput="document.getElementById('headacheValue').textContent = this.value">
+                    </div>
+                    <div class="form-group">
+                        <label for="lightheaded">Lightheaded: <span id="lightheadedValue">0</span></label>
+                        <input type="range" id="lightheaded" min="0" max="10" value="0" oninput="document.getElementById('lightheadedValue').textContent = this.value">
+                    </div>
+                    <div class="form-group">
+                        <label for="agitated">Agitated: <span id="agitatedValue">0</span></label>
+                        <input type="range" id="agitated" min="0" max="10" value="0" oninput="document.getElementById('agitatedValue').textContent = this.value">
+                    </div>
+                    <div class="form-group">
+                        <label for="depressed">Depressed: <span id="depressedValue">0</span></label>
+                        <input type="range" id="depressed" min="0" max="10" value="0" oninput="document.getElementById('depressedValue').textContent = this.value">
+                    </div>
+                    <div class="form-group">
+                        <label for="stomach">Stomach: <span id="stomachValue">0</span></label>
+                        <input type="range" id="stomach" min="0" max="10" value="0" oninput="document.getElementById('stomachValue').textContent = this.value">
+                    </div>
+                    <div class="form-group">
+                        <label for="sinuses">Sinuses: <span id="sinusesValue">0</span></label>
+                        <input type="range" id="sinuses" min="0" max="10" value="0" oninput="document.getElementById('sinusesValue').textContent = this.value">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section" id="section-energy">
+                <h3>⚡ Energy Tracking</h3>
+                <button onclick="logEnergy()">Log Current Energy</button>
+                <div id="energyLog" class="energy-log"></div>
+            </div>
+
+            <div class="form-section" id="section-notes">
+                <h3>📝 Notes</h3>
+                <div class="form-group">
+                    <textarea id="notes" placeholder="Any additional notes for the day..."></textarea>
+                </div>
+            </div>
+
+            <div class="form-section" id="section-media">
+                <h3>📺 Media</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="appleTv">Apple TV+ (hours)</label>
+                        <input type="number" id="appleTv" step="0.1" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="netflix">Netflix (hours)</label>
+                        <input type="number" id="netflix" step="0.1" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="paramount">Paramount+ (hours)</label>
+                        <input type="number" id="paramount" step="0.1" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="amazon">Amazon Prime (hours)</label>
+                        <input type="number" id="amazon" step="0.1" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="youtube">YouTube (hours)</label>
+                        <input type="number" id="youtube" step="0.1" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="youtubeTv">YouTube TV (hours)</label>
+                        <input type="number" id="youtubeTv" step="0.1" min="0">
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button onclick="saveEntry()">💾 Save Entry</button>
+                <button onclick="loadToday()" class="secondary">🔄 Reload Today</button>
+                <button onclick="clearForm()" class="secondary">🗑️ Clear Form</button>
+            </div>
+        </div>
+
+        <!-- Other Views -->
+        <div id="medsView" class="view">
+            <h2>💊 Medication History</h2>
+            <div id="medsHistory"></div>
+        </div>
+
+        <div id="dietView" class="view">
+            <h2>🍽️ Diet History</h2>
+            <div id="dietHistory"></div>
+        </div>
+
+        <div id="exerciseView" class="view">
+            <h2>💪 Exercise History</h2>
+            <div id="exerciseHistory"></div>
+        </div>
+
+        <!-- Weights View -->
+        <div id="workoutView" class="view">
+            <div class="form-section">
+                <h2>🏋️ Weights</h2>
+                <p style="color: var(--secondary); margin-bottom: 1.5rem;">Quick exercise logging with instant recall of previous workouts</p>
+                
+                <!-- Date Selector -->
+                <div style="margin-bottom: 1.5rem;">
+                    <label for="workoutDate" style="font-weight: 600; margin-right: 0.5rem;">Workout Date:</label>
+                    <input type="date" id="workoutDate" style="padding: 0.5rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem;">
+                </div>
+
+                <!-- Add Exercise Form -->
+                <div style="background: var(--surface); padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem;">
+                    <h3 style="margin-bottom: 1rem; color: var(--primary);">Log Exercise</h3>
+                    
+                    <div style="display: grid; gap: 1rem;">
+                        <div class="form-group">
+                            <label for="exerciseName">Exercise Name</label>
+                            <input type="text" id="exerciseName" placeholder="e.g., Incline Bench Press" oninput="showExerciseHistory()">
+                            <div id="exerciseHistoryPreview" style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--secondary);"></div>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label for="exerciseSets">Sets x Reps</label>
+                                <input type="text" id="exerciseSets" placeholder="e.g., 3 x 5">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="exerciseWeight">Weight (lbs)</label>
+                                <input type="number" id="exerciseWeight" step="5">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="exerciseNotes">Notes (optional)</label>
+                            <textarea id="exerciseNotes" rows="2" placeholder="How did it feel?"></textarea>
+                        </div>
+                        
+                        <button onclick="saveExercise()" style="width: 100%;">💾 Save Exercise</button>
+                    </div>
+                </div>
+
+                <!-- Today's Workout -->
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="margin-bottom: 1rem; color: var(--primary);">Today's Exercises</h3>
+                    <div id="todayExercises"></div>
+                </div>
+
+                <!-- Exercise History -->
+                <div>
+                    <h3 style="margin-bottom: 1rem; color: var(--primary);">Exercise History</h3>
+                    <div class="form-group" style="max-width: 400px; margin-bottom: 1rem;">
+                        <label for="historyFilter">Filter by Exercise</label>
+                        <input type="text" id="historyFilter" placeholder="Type exercise name..." oninput="filterExerciseHistory()">
+                    </div>
+                    <div id="exerciseHistoryList"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="ailmentsView" class="view">
+            <h2>🩺 Ailments History</h2>
+            <div id="ailmentsHistory"></div>
+        </div>
+
+        <div id="energyView" class="view">
+            <h2>⚡ Energy History</h2>
+            <div id="energyHistoryView"></div>
+        </div>
+
+        <div id="notesView" class="view">
+            <h2>📝 Notes History</h2>
+            <div id="notesHistory"></div>
+        </div>
+
+        <div id="mediaView" class="view">
+            <h2>📺 Media History</h2>
+            <div id="mediaHistory"></div>
+        </div>
+
+        <div id="historyView" class="view">
+            <h2>📋 Complete History</h2>
+            <button onclick="downloadCSV()" class="success" style="margin-bottom: 1rem;">⬇️ Download CSV</button>
+            <div id="completeHistory"></div>
+        </div>
+
+        <!-- Settings View -->
+        <div id="settingsView" class="view">
+            <div class="form-section">
+                <h2>⚙️ Settings</h2>
+                
+                <!-- Firebase Sync Section -->
+                <div class="sync-notice" style="margin-bottom: 2rem;">
+                    <h2>🔥 Firebase Cloud Sync Enabled</h2>
+                    <p>All changes save automatically and sync across all your devices in real-time!</p>
+                    <div style="margin-top: 1rem; display: flex; align-items: center; gap: 1rem;">
+                        <div class="sync-status" style="background: rgba(255,255,255,0.3);">
+                            <div class="sync-indicator" id="syncIndicator2"></div>
+                            <span id="syncStatus2">Connected</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data Management -->
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="margin-bottom: 1rem; color: var(--primary); border-bottom: 2px solid var(--border); padding-bottom: 0.5rem;">Data Management</h3>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <button onclick="importCSV()" class="secondary">📥 Import CSV</button>
+                        <button onclick="exportCSV()" class="secondary">📤 Export CSV</button>
+                    </div>
+                </div>
+
+                <!-- History -->
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="margin-bottom: 1rem; color: var(--primary); border-bottom: 2px solid var(--border); padding-bottom: 0.5rem;">History</h3>
+                    <button onclick="showView('history')">📋 View Complete History</button>
+                </div>
+
+                <!-- About -->
+                <div style="margin-top: 3rem; padding-top: 2rem; border-top: 2px solid var(--border);">
+                    <p style="color: var(--secondary); font-size: 0.875rem;">
+                        <strong>Health Tracker v2.0</strong><br>
+                        Firebase-powered health tracking with real-time sync<br>
+                        Built with ❤️ for comprehensive health monitoring
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCOkn1TUMnMQLpipLaBj3joU18-X9_YY9A",
+            authDomain: "health-tracker-c72a2.firebaseapp.com",
+            projectId: "health-tracker-c72a2",
+            storageBucket: "health-tracker-c72a2.firebasestorage.app",
+            messagingSenderId: "322478791608",
+            appId: "1:322478791608:web:ba1e127icce0c6b2688d4d"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const healthCollection = db.collection('health-entries');
+
+        // Global state
+        let healthData = [];
+        // Get local date (not UTC)
+        function getLocalDate() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+        let currentDate = getLocalDate();
+        let isOnline = navigator.onLine;
+
+        // Update sync status (now updates Settings page)
+        function updateSyncStatus(status, text) {
+            const indicator = document.getElementById('syncIndicator2');
+            const syncText = document.getElementById('syncStatus2');
+            
+            if (indicator) {
+                indicator.className = 'sync-indicator';
+                if (status === 'offline') {
+                    indicator.classList.add('offline');
+                } else if (status === 'syncing') {
+                    indicator.classList.add('syncing');
+                }
+            }
+            
+            if (syncText) {
+                syncText.textContent = text || 'Connected';
+            }
+        }
+
+        // Monitor online/offline status
+        window.addEventListener('online', () => {
+            isOnline = true;
+            updateSyncStatus('', 'Online - Syncing...');
+        });
+
+        window.addEventListener('offline', () => {
+            isOnline = false;
+            updateSyncStatus('offline', 'Offline');
+        });
+
+        // Load data from Firebase
+        async function loadDataFromFirebase() {
+            try {
+                updateSyncStatus('syncing', 'Loading...');
+                
+                const snapshot = await healthCollection.orderBy('date', 'desc').get();
+                healthData = [];
+                
+                snapshot.forEach(doc => {
+                    healthData.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                
+                updateEntriesCount();
+                updateSyncStatus('', 'Synced');
+                
+                // Set up real-time listener
+                healthCollection.onSnapshot((snapshot) => {
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === 'added' || change.type === 'modified') {
+                            const data = { id: change.doc.id, ...change.doc.data() };
+                            const index = healthData.findIndex(e => e.id === data.id);
+                            
+                            if (index >= 0) {
+                                healthData[index] = data;
+                            } else {
+                                healthData.push(data);
+                            }
+                        } else if (change.type === 'removed') {
+                            healthData = healthData.filter(e => e.id !== change.doc.id);
+                        }
+                    });
+                    
+                    healthData.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    updateEntriesCount();
+                    
+                    // Reload current view if showing today's data
+                    const currentEntry = healthData.find(e => e.date === currentDate);
+                    if (currentEntry && document.getElementById('dailyView').classList.contains('active')) {
+                        loadToday();
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+                updateSyncStatus('offline', 'Error loading');
+            }
+        }
+
+        // Update entries count
+        function updateEntriesCount() {
+            // Entry count removed from header
+        }
+
+        // Update current date display
+        function updateCurrentDateDisplay() {
+            document.getElementById('currentDateDisplay').textContent = currentDate;
+            document.getElementById('datePicker').value = currentDate;
+        }
+        
+        // Date picker handler
+        document.addEventListener('DOMContentLoaded', function() {
+            const datePicker = document.getElementById('datePicker');
+            if (datePicker) {
+                datePicker.addEventListener('change', function() {
+                    currentDate = this.value;
+                    updateCurrentDateDisplay();
+                    loadToday();
+                });
+            }
+        });
+
+        // Save entry to Firebase
+        async function saveEntry() {
+            try {
+                updateSyncStatus('syncing', 'Saving...');
+                
+                const entry = {
+                    date: currentDate,
+                    // Medications
+                    concerta: document.getElementById('concerta').checked,
+                    effexor: document.getElementById('effexor').checked,
+                    c: document.getElementById('c').checked,
+                    omega3: document.getElementById('omega3').checked,
+                    zma: document.getElementById('zma').checked,
+                    creatine: document.getElementById('creatine').checked,
+                    no2: document.getElementById('no2').checked,
+                    probiotic: document.getElementById('probiotic').checked,
+                    lz: document.getElementById('lz').checked,
+                    d3k: document.getElementById('d3k').checked,
+                    melatonin: document.getElementById('melatonin').checked,
+                    mblue: document.getElementById('mblue').checked,
+                    potassium: document.getElementById('potassium').checked,
+                    boost: document.getElementById('boost').checked,
+                    multi: document.getElementById('multi').checked,
+                    bcaa: document.getElementById('bcaa').checked,
+                    adrenal: document.getElementById('adrenal').checked,
+                    msm: document.getElementById('msm').checked,
+                    // Diet
+                    weight: document.getElementById('weight').value,
+                    diet: document.getElementById('diet').value,
+                    startEating: document.getElementById('startEating').value,
+                    endEating: document.getElementById('endEating').value,
+                    fasting: document.getElementById('fasting').textContent,
+                    fast: document.getElementById('fast').checked,
+                    water: document.getElementById('water').value,
+                    protein: document.getElementById('protein').value,
+                    carbs: document.getElementById('carbs').checked,
+                    alcohol: document.getElementById('alcohol').value,
+                    cheatMeal: document.getElementById('cheatMeal').checked,
+                    cheatDessert: document.getElementById('cheatDessert').checked,
+                    body: document.getElementById('body').value,
+                    // Exercise
+                    routine: document.getElementById('routine').value,
+                    exercise: document.getElementById('exercise').value,
+                    duration: document.getElementById('duration').value,
+                    stretch: document.getElementById('stretch').checked,
+                    meditate: document.getElementById('meditate').checked,
+                    // Ailments
+                    headache: document.getElementById('headache').value,
+                    lightheaded: document.getElementById('lightheaded').value,
+                    agitated: document.getElementById('agitated').value,
+                    depressed: document.getElementById('depressed').value,
+                    stomach: document.getElementById('stomach').value,
+                    sinuses: document.getElementById('sinuses').value,
+                    // Energy
+                    energy: getCurrentEnergyLog(),
+                    // Notes
+                    notes: document.getElementById('notes').value,
+                    // Media
+                    appleTv: document.getElementById('appleTv').value,
+                    netflix: document.getElementById('netflix').value,
+                    paramount: document.getElementById('paramount').value,
+                    amazon: document.getElementById('amazon').value,
+                    youtube: document.getElementById('youtube').value,
+                    youtubeTv: document.getElementById('youtubeTv').value,
+                    nicotine: document.getElementById('nicotine').value,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                // Find existing entry for today
+                const existingEntry = healthData.find(e => e.date === currentDate);
+                
+                if (existingEntry && existingEntry.id) {
+                    // Update existing
+                    await healthCollection.doc(existingEntry.id).update(entry);
+                } else {
+                    // Create new
+                    await healthCollection.add(entry);
+                }
+                
+                updateSyncStatus('', 'Synced');
+                alert('Entry saved and synced!');
+                
+            } catch (error) {
+                console.error('Error saving:', error);
+                updateSyncStatus('offline', 'Save error');
+                alert('Error saving entry. Check console for details.');
+            }
+        }
+
+        // Load today's entry
+        function loadToday() {
+            const entry = healthData.find(e => e.date === currentDate);
+            
+            if (entry) {
+                // Load all fields
+                document.getElementById('concerta').checked = entry.concerta || false;
+                document.getElementById('effexor').checked = entry.effexor || false;
+                document.getElementById('c').checked = entry.c || false;
+                document.getElementById('omega3').checked = entry.omega3 || false;
+                document.getElementById('zma').checked = entry.zma || false;
+                document.getElementById('creatine').checked = entry.creatine || false;
+                document.getElementById('no2').checked = entry.no2 || false;
+                document.getElementById('probiotic').checked = entry.probiotic || false;
+                document.getElementById('lz').checked = entry.lz || false;
+                document.getElementById('d3k').checked = entry.d3k || false;
+                document.getElementById('melatonin').checked = entry.melatonin || false;
+                document.getElementById('mblue').checked = entry.mblue || false;
+                document.getElementById('potassium').checked = entry.potassium || false;
+                document.getElementById('boost').checked = entry.boost || false;
+                document.getElementById('multi').checked = entry.multi || false;
+                document.getElementById('bcaa').checked = entry.bcaa || false;
+                document.getElementById('adrenal').checked = entry.adrenal || false;
+                document.getElementById('msm').checked = entry.msm || false;
+                
+                document.getElementById('weight').value = entry.weight || '';
+                document.getElementById('diet').value = entry.diet || '';
+                document.getElementById('startEating').value = entry.startEating || '';
+                document.getElementById('endEating').value = entry.endEating || '';
+                document.getElementById('fast').checked = entry.fast || false;
+                document.getElementById('water').value = entry.water || 0;
+                    document.getElementById('waterValue').textContent = entry.water || 0;
+                document.getElementById('protein').value = entry.protein || 0;
+                    document.getElementById('proteinValue').textContent = entry.protein || 0;
+                document.getElementById('carbs').checked = entry.carbs || false;
+                document.getElementById('alcohol').value = entry.alcohol || 0;
+                    document.getElementById('alcoholValue').textContent = entry.alcohol || 0;
+                document.getElementById('alcoholValue').textContent = entry.alcohol || 0;
+                document.getElementById('cheatMeal').checked = entry.cheatMeal || false;
+                document.getElementById('cheatDessert').checked = entry.cheatDessert || false;
+                document.getElementById('body').value = entry.body || '';
+                
+                document.getElementById('routine').value = entry.routine || '';
+                document.getElementById('exercise').value = entry.exercise || '';
+                document.getElementById('duration').value = entry.duration || '';
+                document.getElementById('stretch').checked = entry.stretch || false;
+                document.getElementById('meditate').checked = entry.meditate || false;
+                
+                document.getElementById('headache').value = entry.headache || 0;
+                document.getElementById('headacheValue').textContent = entry.headache || 0;
+                document.getElementById('lightheaded').value = entry.lightheaded || 0;
+                document.getElementById('lightheadedValue').textContent = entry.lightheaded || 0;
+                document.getElementById('agitated').value = entry.agitated || 0;
+                document.getElementById('agitatedValue').textContent = entry.agitated || 0;
+                document.getElementById('depressed').value = entry.depressed || 0;
+                document.getElementById('depressedValue').textContent = entry.depressed || 0;
+                document.getElementById('stomach').value = entry.stomach || 0;
+                document.getElementById('stomachValue').textContent = entry.stomach || 0;
+                document.getElementById('sinuses').value = entry.sinuses || 0;
+                document.getElementById('sinusesValue').textContent = entry.sinuses || 0;
+                
+                document.getElementById('notes').value = entry.notes || '';
+                
+                document.getElementById('appleTv').value = entry.appleTv || '';
+                document.getElementById('netflix').value = entry.netflix || '';
+                document.getElementById('paramount').value = entry.paramount || '';
+                document.getElementById('amazon').value = entry.amazon || '';
+                document.getElementById('youtube').value = entry.youtube || '';
+                document.getElementById('youtubeTv').value = entry.youtubeTv || '';
+                document.getElementById('nicotine').value = entry.nicotine || 0;
+                    document.getElementById('nicotineValue').textContent = entry.nicotine || 0;
+
+                displayEnergyLog(entry.energy || []);
+                calculateFasting();
+            } else {
+                clearForm();
+            }
+        }
+
+        // Clear form
+        function clearForm() {
+            document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            document.querySelectorAll('input[type="text"], input[type="number"], input[type="time"], textarea').forEach(input => input.value = '');
+            document.querySelectorAll('input[type="range"]').forEach(slider => {
+                slider.value = 0;
+                const valueSpan = document.getElementById(slider.id + 'Value');
+                if (valueSpan) valueSpan.textContent = '0';
+            });
+            document.getElementById('energyLog').innerHTML = '';
+        }
+
+        // Calculate fasting
+        function calculateFasting() {
+            const start = document.getElementById('startEating').value;
+            const end = document.getElementById('endEating').value;
+            
+            if (start && end) {
+                const startMinutes = parseInt(start.split(':')[0]) * 60 + parseInt(start.split(':')[1]);
+                const endMinutes = parseInt(end.split(':')[0]) * 60 + parseInt(end.split(':')[1]);
+                const eatingWindow = (endMinutes - startMinutes) / 60;
+                const fastingHours = 24 - eatingWindow;
+                document.getElementById('fasting').textContent = fastingHours.toFixed(1) + ' hours';
+            } else {
+                document.getElementById('fasting').textContent = '--';
+            }
+        }
+
+        document.getElementById('startEating').addEventListener('change', calculateFasting);
+        document.getElementById('endEating').addEventListener('change', calculateFasting);
+
+        // Energy logging
+        function logEnergy() {
+            const level = prompt('Enter energy level (0-10):');
+            if (level !== null && level >= 0 && level <= 10) {
+                const time = new Date().toLocaleTimeString();
+                const energyLog = getCurrentEnergyLog();
+                energyLog.push({ time, level: parseInt(level) });
+                displayEnergyLog(energyLog);
+                // Auto-save when energy is logged
+                saveEntry();
+            }
+        }
+
+        function getCurrentEnergyLog() {
+            const entry = healthData.find(e => e.date === currentDate);
+            return entry ? (entry.energy || []) : [];
+        }
+
+        function displayEnergyLog(log) {
+            const container = document.getElementById('energyLog');
+            container.innerHTML = '';
+            
+            if (log.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--secondary);">No energy logs yet today</p>';
+                return;
+            }
+
+            log.forEach((entry, index) => {
+                const div = document.createElement('div');
+                div.className = 'energy-entry';
+                div.innerHTML = `
+                    <span>${entry.time}</span>
+                    <span>Energy: ${entry.level}/10</span>
+                    <button onclick="deleteEnergyLog(${index})">Delete</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function deleteEnergyLog(index) {
+            const entry = healthData.find(e => e.date === currentDate);
+            if (entry && entry.energy) {
+                entry.energy.splice(index, 1);
+                displayEnergyLog(entry.energy);
+                saveEntry();
+            }
+        }
+
+        // View switching
+        function showView(viewName) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-tabs button').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById(viewName + 'View').classList.add('active');
+            event.target.classList.add('active');
+
+            switch(viewName) {
+                case 'meds': loadMedsHistory(); break;
+                case 'diet': loadDietHistory(); break;
+                case 'exercise': loadExerciseHistory(); break;
+                case 'ailments': loadAilmentsHistory(); break;
+                case 'energy': loadEnergyHistory(); break;
+                case 'notes': loadNotesHistory(); break;
+                case 'media': loadMediaHistory(); break;
+                case 'history': loadCompleteHistory(); break;
+            }
+        }
+
+        // History views
+        function loadMedsHistory() {
+            const container = document.getElementById('medsHistory');
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Concerta</th><th>Effexor</th><th>C</th><th>Omega-3</th><th>ZMA</th><th>Creatine</th><th>Action</th></tr></thead><tbody>';
+            healthData.forEach(entry => {
+                html += `<tr><td>${entry.date}</td><td>${entry.concerta ? '✓' : ''}</td><td>${entry.effexor ? '✓' : ''}</td><td>${entry.c ? '✓' : ''}</td><td>${entry.omega3 ? '✓' : ''}</td><td>${entry.zma ? '✓' : ''}</td><td>${entry.creatine ? '✓' : ''}</td><td><button onclick="loadDate('${entry.date}', 'meds')" class="small">Edit</button></td></tr>`;
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function loadDietHistory() {
+            const container = document.getElementById('dietHistory');
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Weight</th><th>Diet</th><th>Water</th><th>Protein</th><th>Carbs</th><th>Alcohol</th><th>Nicotine</th><th>Fasting</th><th>Action</th></tr></thead><tbody>';
+            healthData.forEach(entry => {
+                html += `<tr><td>${entry.date}</td><td>${entry.weight || '-'}</td><td>${entry.diet ? (entry.diet.substring(0, 30) + '...') : '-'}</td><td>${entry.water || '-'}</td><td>${entry.protein || '-'}</td><td>${entry.carbs ? '✓' : '-'}</td><td>${entry.alcohol || 0}/10</td><td>${entry.nicotine || 0}/6</td><td>${entry.fasting || '-'}</td><td><button onclick="loadDate('${entry.date}', 'diet')" class="small">Edit</button></td></tr>`;
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function loadExerciseHistory() {
+            const container = document.getElementById('exerciseHistory');
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Exercise</th><th>Duration</th><th>Routine</th><th>Stretch</th><th>Meditate</th><th>Action</th></tr></thead><tbody>';
+            healthData.forEach(entry => {
+                html += `<tr><td>${entry.date}</td><td>${entry.exercise || '-'}</td><td>${entry.duration || '-'}</td><td>${(entry.routine || '-').substring(0, 50)}</td><td>${entry.stretch ? '✓' : ''}</td><td>${entry.meditate ? '✓' : ''}</td><td><button onclick="loadDate('${entry.date}', 'exercise')" class="small">Edit</button></td></tr>`;
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function loadAilmentsHistory() {
+            const container = document.getElementById('ailmentsHistory');
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Headache</th><th>Lightheaded</th><th>Agitated</th><th>Depressed</th><th>Stomach</th><th>Sinuses</th><th>Action</th></tr></thead><tbody>';
+            healthData.forEach(entry => {
+                html += `<tr><td>${entry.date}</td><td>${entry.headache || 0}/10</td><td>${entry.lightheaded || 0}/10</td><td>${entry.agitated || 0}/10</td><td>${entry.depressed || 0}/10</td><td>${entry.stomach || 0}/10</td><td>${entry.sinuses || 0}/10</td><td><button onclick="loadDate('${entry.date}', 'ailments')" class="small">Edit</button></td></tr>`;
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function loadEnergyHistory() {
+            const container = document.getElementById('energyHistoryView');
+            let html = '';
+            healthData.forEach(entry => {
+                if (entry.energy && entry.energy.length > 0) {
+                    html += `<div style="margin-bottom: 2rem; padding: 1rem; background: var(--surface); border-radius: 8px;"><h3 style="margin-bottom: 1rem;">${entry.date}</h3>`;
+                    entry.energy.forEach(e => {
+                        html += `<div style="display: flex; justify-content: space-between; padding: 0.5rem; background: white; border-radius: 6px; margin-bottom: 0.5rem;"><span>${e.time}</span><span>Energy: ${e.level}/10</span></div>`;
+                    });
+                    html += `</div>`;
+                }
+            });
+            container.innerHTML = html || '<p>No energy logs yet</p>';
+        }
+
+        function loadNotesHistory() {
+            const container = document.getElementById('notesHistory');
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Notes</th><th>Action</th></tr></thead><tbody>';
+            healthData.forEach(entry => {
+                if (entry.notes) {
+                    html += `<tr><td>${entry.date}</td><td>${entry.notes}</td><td><button onclick="loadDate('${entry.date}', 'notes')" class="small">Edit</button></td></tr>`;
+                }
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function loadMediaHistory() {
+            const container = document.getElementById('mediaHistory');
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Apple TV+</th><th>Netflix</th><th>Paramount</th><th>Amazon</th><th>YouTube</th><th>YouTube TV</th><th>Action</th></tr></thead><tbody>';
+            healthData.forEach(entry => {
+                html += `<tr><td>${entry.date}</td><td>${entry.appleTv || '-'}</td><td>${entry.netflix || '-'}</td><td>${entry.paramount || '-'}</td><td>${entry.amazon || '-'}</td><td>${entry.youtube || '-'}</td><td>${entry.youtubeTv || '-'}</td><td><button onclick="loadDate('${entry.date}', 'media')" class="small">Edit</button></td></tr>`;
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function loadCompleteHistory() {
+            const container = document.getElementById('completeHistory');
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Weight</th><th>Exercise</th><th>Fasting</th><th>Notes</th><th>Action</th></tr></thead><tbody>';
+            healthData.forEach(entry => {
+                html += `<tr><td>${entry.date}</td><td>${entry.weight || '-'}</td><td>${entry.exercise || '-'}</td><td>${entry.fasting || '-'}</td><td>${entry.notes ? entry.notes.substring(0, 50) + '...' : '-'}</td><td><button onclick="loadDate('${entry.date}')" class="small">Edit</button></td></tr>`;
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function loadDate(date, section) {
+            currentDate = date;
+            updateCurrentDateDisplay();
+            showView('daily');
+            loadToday();
+            
+            // Scroll to section if specified
+            if (section) {
+                setTimeout(() => {
+                    const element = document.getElementById('section-' + section);
+                    if (element) {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }, 100);
+            }
+        }
+
+        // CSV Import - Upload to Firebase
+        function importCSV() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.csv';
+            input.onchange = async function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const confirmImport = confirm(`Import CSV file "${file.name}"?\n\nThis will add all entries from the CSV to Firebase.\nExisting entries with the same date will be updated.`);
+                if (!confirmImport) return;
+                
+                updateSyncStatus('syncing', 'Importing CSV...');
+                
+                const reader = new FileReader();
+                reader.onload = async function(event) {
+                    try {
+                        const text = event.target.result;
+                        const lines = text.split('\n');
+                        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+                        
+                        let importCount = 0;
+                        let updateCount = 0;
+                        
+                        for (let i = 1; i < lines.length; i++) {
+                            if (!lines[i].trim()) continue;
+                            
+                            // Parse CSV line (handle quoted fields)
+                            const values = [];
+                            let currentValue = '';
+                            let insideQuotes = false;
+                            
+                            for (let char of lines[i]) {
+                                if (char === '"') {
+                                    insideQuotes = !insideQuotes;
+                                } else if (char === ',' && !insideQuotes) {
+                                    values.push(currentValue.trim());
+                                    currentValue = '';
+                                } else {
+                                    currentValue += char;
+                                }
+                            }
+                            values.push(currentValue.trim());
+                            
+                            if (values.length < 10) continue; // Skip malformed rows
+                            
+                            // Map values to entry object
+                            const entry = {
+                                date: values[0],
+                                concerta: values[1]?.toLowerCase() === 'true',
+                                effexor: values[2]?.toLowerCase() === 'true',
+                                c: values[3]?.toLowerCase() === 'true',
+                                omega3: values[4]?.toLowerCase() === 'true',
+                                zma: values[5]?.toLowerCase() === 'true',
+                                creatine: values[6]?.toLowerCase() === 'true',
+                                no2: values[7]?.toLowerCase() === 'true',
+                                probiotic: values[8]?.toLowerCase() === 'true',
+                                lz: values[9]?.toLowerCase() === 'true',
+                                d3k: values[10]?.toLowerCase() === 'true',
+                                melatonin: values[11]?.toLowerCase() === 'true',
+                                mblue: values[12]?.toLowerCase() === 'true',
+                                potassium: values[13]?.toLowerCase() === 'true',
+                                boost: values[14]?.toLowerCase() === 'true',
+                                multi: values[15]?.toLowerCase() === 'true',
+                                bcaa: values[16]?.toLowerCase() === 'true',
+                                adrenal: values[17]?.toLowerCase() === 'true',
+                                msm: values[18]?.toLowerCase() === 'true',
+                                weight: values[19] || '',
+                                diet: values[20] || '',
+                                startEating: values[21] || '',
+                                endEating: values[22] || '',
+                                fasting: values[23] || '',
+                                fast: values[24]?.toLowerCase() === 'true',
+                                water: values[25] || '',
+                                protein: values[26] || '',
+                                carbs: values[27] || '',
+                                alcohol: values[28] || '0',
+                                cheatMeal: values[29]?.toLowerCase() === 'true',
+                                cheatDessert: values[30]?.toLowerCase() === 'true',
+                                body: values[31]?.replace(/^"|"$/g, '') || '',
+                                routine: values[32]?.replace(/^"|"$/g, '') || '',
+                                exercise: values[33] || '',
+                                duration: values[34] || '',
+                                stretch: values[35]?.toLowerCase() === 'true',
+                                meditate: values[36]?.toLowerCase() === 'true',
+                                headache: values[37] || '0',
+                                lightheaded: values[38] || '0',
+                                agitated: values[39] || '0',
+                                depressed: values[40] || '0',
+                                stomach: values[41] || '0',
+                                sinuses: values[42] || '0',
+                                notes: values[43]?.replace(/^"|"$/g, '') || '',
+                                appleTv: values[44] || '',
+                                netflix: values[45] || '',
+                                paramount: values[46] || '',
+                                amazon: values[47] || '',
+                                youtube: values[48] || '',
+                                youtubeTv: values[49] || '',
+                                nicotine: values[50] || '',
+                                energy: [],
+                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                            };
+                            
+                            // Check if entry exists for this date
+                            const existingEntry = healthData.find(e => e.date === entry.date);
+                            
+                            if (existingEntry && existingEntry.id) {
+                                // Update existing
+                                await healthCollection.doc(existingEntry.id).update(entry);
+                                updateCount++;
+                            } else {
+                                // Create new
+                                await healthCollection.add(entry);
+                                importCount++;
+                            }
+                            
+                            // Update progress
+                            updateSyncStatus('syncing', `Importing... ${importCount + updateCount}/${lines.length - 1}`);
+                        }
+                        
+                        updateSyncStatus('', 'Synced');
+                        alert(`Import complete!\n\nNew entries: ${importCount}\nUpdated entries: ${updateCount}\nTotal: ${importCount + updateCount}`);
+                        
+                        // Reload data
+                        await loadDataFromFirebase();
+                        loadToday();
+                        
+                    } catch (error) {
+                        console.error('Import error:', error);
+                        updateSyncStatus('offline', 'Import failed');
+                        alert('Error importing CSV: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        // CSV Export
+        // Export CSV (alias for download)
+        function exportCSV() {
+            downloadCSV();
+        }
+
+        function downloadCSV() {
+            let csv = 'Date,Concerta,Effexor,C,Omega-3,ZMA,Creatine,NO2,Probiotic,L/Z,D3/K,Melatonin,M-Blue,Potassium,Boost,Multi,BCAA,Adrenal,MSM,Weight,Diet,Start eating,End eating,Fasting,Fast,Water,Protein,Carbs,Alcohol,Cheat meal,Cheat dessert,Body,Routine,Exercise,Duration,Stretch,Meditate,Headache,Lightheaded,Agitated,Depressed,Stomach,Sinuses,Notes,Apple TV+,Netflix,Paramount,Amazon,YT,YT TV,Nicotine\n';
+            
+            healthData.forEach(entry => {
+                const row = [
+                    entry.date,
+                    entry.concerta ? 'TRUE' : 'FALSE',
+                    entry.effexor ? 'TRUE' : 'FALSE',
+                    entry.c ? 'TRUE' : 'FALSE',
+                    entry.omega3 ? 'TRUE' : 'FALSE',
+                    entry.zma ? 'TRUE' : 'FALSE',
+                    entry.creatine ? 'TRUE' : 'FALSE',
+                    entry.no2 ? 'TRUE' : 'FALSE',
+                    entry.probiotic ? 'TRUE' : 'FALSE',
+                    entry.lz ? 'TRUE' : 'FALSE',
+                    entry.d3k ? 'TRUE' : 'FALSE',
+                    entry.melatonin ? 'TRUE' : 'FALSE',
+                    entry.mblue ? 'TRUE' : 'FALSE',
+                    entry.potassium ? 'TRUE' : 'FALSE',
+                    entry.boost ? 'TRUE' : 'FALSE',
+                    entry.multi ? 'TRUE' : 'FALSE',
+                    entry.bcaa ? 'TRUE' : 'FALSE',
+                    entry.adrenal ? 'TRUE' : 'FALSE',
+                    entry.msm ? 'TRUE' : 'FALSE',
+                    entry.weight || '',
+                    entry.diet || '',
+                    entry.startEating || '',
+                    entry.endEating || '',
+                    entry.fasting || '',
+                    entry.fast ? 'TRUE' : 'FALSE',
+                    entry.water || '',
+                    entry.protein || '',
+                    entry.carbs || '',
+                    entry.alcohol || '',
+                    entry.cheatMeal ? 'TRUE' : 'FALSE',
+                    entry.cheatDessert ? 'TRUE' : 'FALSE',
+                    `"${(entry.body || '').replace(/"/g, '""')}"`,
+                    `"${(entry.routine || '').replace(/"/g, '""')}"`,
+                    entry.exercise || '',
+                    entry.duration || '',
+                    entry.stretch ? 'TRUE' : 'FALSE',
+                    entry.meditate ? 'TRUE' : 'FALSE',
+                    entry.headache || 0,
+                    entry.lightheaded || 0,
+                    entry.agitated || 0,
+                    entry.depressed || 0,
+                    entry.stomach || 0,
+                    entry.sinuses || 0,
+                    `"${(entry.notes || '').replace(/"/g, '""')}"`,
+                    entry.appleTv || '',
+                    entry.netflix || '',
+                    entry.paramount || '',
+                    entry.amazon || '',
+                    entry.youtube || '',
+                    entry.youtubeTv || '',
+                    entry.nicotine || ''
+                ];
+                csv += row.join(',') + '\n';
+            });
+
+            const blob = new Blob([csv], {type: 'text/csv'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `health-data-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // ============================================
+        // WEIGHTS TRACKING FUNCTIONS
+        // ============================================
+        
+        let workoutData = [];
+        let currentWorkoutDate = getLocalDate();
+        
+        // Load all workout data from Firebase
+        const workoutsCollection = db.collection('workouts');
+        
+        workoutsCollection.orderBy('date', 'desc').onSnapshot(snapshot => {
+            workoutData = [];
+            snapshot.forEach(doc => {
+                workoutData.push({ id: doc.id, ...doc.data() });
+            });
+            
+            // Refresh displays if on workout view
+            if (document.getElementById('todayExercises')) {
+                loadTodayExercises();
+                loadExerciseHistory();
+            }
+        });
+        
+        // Save exercise to Firebase
+        async function saveExercise() {
+            const exerciseName = document.getElementById('exerciseName').value.trim();
+            const sets = document.getElementById('exerciseSets').value.trim();
+            const weight = document.getElementById('exerciseWeight').value;
+            const notes = document.getElementById('exerciseNotes').value.trim();
+            
+            if (!exerciseName) {
+                alert('Please enter an exercise name');
+                return;
+            }
+            
+            if (!sets || !weight) {
+                alert('Please enter sets/reps and weight');
+                return;
+            }
+            
+            const exercise = {
+                date: currentWorkoutDate,
+                exerciseName: exerciseName,
+                sets: sets,
+                weight: parseFloat(weight),
+                notes: notes,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            
+            try {
+                await workoutsCollection.add(exercise);
+                
+                // Clear form
+                document.getElementById('exerciseName').value = '';
+                document.getElementById('exerciseSets').value = '';
+                document.getElementById('exerciseWeight').value = '';
+                document.getElementById('exerciseNotes').value = '';
+                document.getElementById('exerciseHistoryPreview').innerHTML = '';
+                
+                alert('✅ Exercise saved!');
+            } catch (error) {
+                console.error('Error saving exercise:', error);
+                alert('❌ Error saving exercise: ' + error.message);
+            }
+        }
+        
+        // Show exercise history preview while typing
+        function showExerciseHistory() {
+            const exerciseName = document.getElementById('exerciseName').value.trim().toLowerCase();
+            const preview = document.getElementById('exerciseHistoryPreview');
+            
+            if (!exerciseName || exerciseName.length < 3) {
+                preview.innerHTML = '';
+                return;
+            }
+            
+            // Find matching exercises
+            const matches = workoutData.filter(w => 
+                w.exerciseName.toLowerCase().includes(exerciseName)
+            ).slice(0, 3);
+            
+            if (matches.length === 0) {
+                preview.innerHTML = '<span style="color: var(--secondary);">No previous workouts found</span>';
+                return;
+            }
+            
+            let html = '<div style="background: white; padding: 0.75rem; border-radius: 8px; border: 2px solid var(--primary);">';
+            html += '<strong style="color: var(--primary);">Previous workouts:</strong><br>';
+            matches.forEach((match, index) => {
+                const label = index === 0 ? 'Last time' : index === 1 ? 'Previous' : 'Earlier';
+                html += `<div style="margin-top: 0.25rem;">📊 ${label}: ${match.sets} @ ${match.weight} lbs <span style="color: var(--secondary);">(${match.date})</span></div>`;
+            });
+            html += '</div>';
+            
+            preview.innerHTML = html;
+        }
+        
+        // Load today's exercises
+        function loadTodayExercises() {
+            const container = document.getElementById('todayExercises');
+            if (!container) return;
+            
+            const todayWorkouts = workoutData.filter(w => w.date === currentWorkoutDate);
+            
+            if (todayWorkouts.length === 0) {
+                container.innerHTML = '<p style="color: var(--secondary); font-style: italic;">No exercises logged for this date yet.</p>';
+                return;
+            }
+            
+            let html = '<div style="display: flex; flex-direction: column; gap: 0.75rem;">';
+            todayWorkouts.forEach(workout => {
+                html += `
+                    <div style="background: white; padding: 1rem; border-radius: 8px; border: 2px solid var(--border); display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <strong style="font-size: 1.1rem; color: var(--primary);">${workout.exerciseName}</strong><br>
+                            <span style="font-size: 0.95rem;">Sets/Reps: ${workout.sets} @ ${workout.weight} lbs</span>
+                            ${workout.notes ? `<br><span style="font-size: 0.875rem; color: var(--secondary); font-style: italic;">${workout.notes}</span>` : ''}
+                        </div>
+                        <button onclick="deleteExercise('${workout.id}')" class="danger small">Delete</button>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            
+            container.innerHTML = html;
+        }
+        
+        // Load exercise history
+        function loadExerciseHistory() {
+            const container = document.getElementById('exerciseHistoryList');
+            if (!container) return;
+            
+            const filter = document.getElementById('historyFilter')?.value.toLowerCase() || '';
+            
+            let filtered = workoutData;
+            if (filter) {
+                filtered = workoutData.filter(w => 
+                    w.exerciseName.toLowerCase().includes(filter)
+                );
+            }
+            
+            if (filtered.length === 0) {
+                container.innerHTML = '<p style="color: var(--secondary); font-style: italic;">No workout history yet. Start logging!</p>';
+                return;
+            }
+            
+            // Group by exercise name
+            const grouped = {};
+            filtered.forEach(workout => {
+                if (!grouped[workout.exerciseName]) {
+                    grouped[workout.exerciseName] = [];
+                }
+                grouped[workout.exerciseName].push(workout);
+            });
+            
+            let html = '';
+            Object.keys(grouped).sort().forEach(exerciseName => {
+                const exercises = grouped[exerciseName];
+                html += `
+                    <div style="margin-bottom: 1.5rem; background: white; padding: 1rem; border-radius: 8px;">
+                        <h4 style="color: var(--primary); margin-bottom: 0.75rem; font-size: 1.1rem;">${exerciseName}</h4>
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                `;
+                
+                exercises.slice(0, 5).forEach(ex => {
+                    html += `
+                        <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--surface); border-radius: 4px;">
+                            <span style="color: var(--secondary);">${ex.date}</span>
+                            <span><strong>${ex.sets}</strong> @ <strong>${ex.weight} lbs</strong></span>
+                        </div>
+                    `;
+                });
+                
+                if (exercises.length > 5) {
+                    html += `<div style="font-size: 0.875rem; color: var(--secondary); font-style: italic;">+ ${exercises.length - 5} more workouts</div>`;
+                }
+                
+                html += '</div></div>';
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        // Filter exercise history
+        function filterExerciseHistory() {
+            loadExerciseHistory();
+        }
+        
+        // Delete exercise
+        async function deleteExercise(id) {
+            if (!confirm('Delete this exercise?')) return;
+            
+            try {
+                await workoutsCollection.doc(id).delete();
+                alert('✅ Exercise deleted');
+            } catch (error) {
+                console.error('Error deleting exercise:', error);
+                alert('❌ Error deleting: ' + error.message);
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async function() {
+            updateCurrentDateDisplay();
+            await loadDataFromFirebase();
+            loadToday();
+            
+            // Initialize workout date picker
+            const workoutDateInput = document.getElementById('workoutDate');
+            if (workoutDateInput) {
+                workoutDateInput.value = currentWorkoutDate;
+                workoutDateInput.addEventListener('change', function() {
+                    currentWorkoutDate = this.value;
+                    loadTodayExercises();
+                });
+            }
+        });
+    </script>
+</body>
+</html>
