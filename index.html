@@ -1212,16 +1212,95 @@
         
 
         function loadDate(date) {
+            console.log('Loading date:', date);
+            
             // Update date picker
             const picker = document.getElementById('datePicker');
             if (picker) {
                 picker.value = date;
             }
             
+            // Set current date
             currentDate = date;
-            updateCurrentDateDisplay();
-            showView('daily');
-            loadToday();
+            
+            // Load the data for this date
+            const entry = healthData.find(e => e.date === date);
+            
+            if (entry) {
+                console.log('Found entry for', date);
+                
+                // Populate all fields from entry
+                // Medications
+                document.getElementById('concerta').checked = entry.concerta || false;
+                document.getElementById('boost').checked = entry.boost || false;
+                document.getElementById('vitaminC').checked = entry.vitaminC || false;
+                document.getElementById('omega3').checked = entry.omega3 || false;
+                document.getElementById('zma').checked = entry.zma || false;
+                document.getElementById('no2').checked = entry.no2 || false;
+                document.getElementById('probiotic').checked = entry.probiotic || false;
+                document.getElementById('lz').checked = entry.lz || false;
+                document.getElementById('d3k').checked = entry.d3k || false;
+                document.getElementById('melatonin').checked = entry.melatonin || false;
+                document.getElementById('mblue').checked = entry.mblue || false;
+                document.getElementById('potassium').checked = entry.potassium || false;
+                document.getElementById('creatine').checked = entry.creatine || false;
+                
+                // Diet
+                document.getElementById('weight').value = entry.weight || '';
+                document.getElementById('diet').value = entry.diet || '';
+                document.getElementById('startEating').value = entry.startEating || '';
+                document.getElementById('endEating').value = entry.endEating || '';
+                document.getElementById('water').value = entry.water || 0;
+                document.getElementById('waterDisplay').textContent = (entry.water || 0) + ' oz';
+                document.getElementById('protein').value = entry.protein || 0;
+                document.getElementById('proteinDisplay').textContent = (entry.protein || 0) + ' g';
+                document.getElementById('carbs').value = entry.carbs || '';
+                document.getElementById('alcohol').value = entry.alcohol || 0;
+                document.getElementById('nicotine').value = entry.nicotine || 0;
+                if (document.getElementById('nicotineDisplay')) {
+                    document.getElementById('nicotineDisplay').textContent = entry.nicotine || 0;
+                }
+                document.getElementById('cheatMeal').checked = entry.cheatMeal || false;
+                document.getElementById('cheatDessert').checked = entry.cheatDessert || false;
+                document.getElementById('body').value = entry.body || '';
+                
+                // Exercise
+                document.getElementById('routine').value = entry.routine || '';
+                document.getElementById('exercise').value = entry.exercise || '';
+                document.getElementById('duration').value = entry.duration || '';
+                document.getElementById('stretch').checked = entry.stretch || false;
+                document.getElementById('meditate').checked = entry.meditate || false;
+                
+                // Ailments
+                document.getElementById('headache').value = entry.headache || 0;
+                document.getElementById('lightheaded').value = entry.lightheaded || 0;
+                document.getElementById('agitated').value = entry.agitated || 0;
+                document.getElementById('depressed').value = entry.depressed || 0;
+                document.getElementById('stomach').value = entry.stomach || 0;
+                document.getElementById('sinuses').value = entry.sinuses || 0;
+                
+                // Notes
+                document.getElementById('notes').value = entry.notes || '';
+                
+                // Media
+                document.getElementById('appleTv').value = entry.appleTv || 0;
+                document.getElementById('netflix').value = entry.netflix || 0;
+                document.getElementById('paramount').value = entry.paramount || 0;
+                document.getElementById('amazon').value = entry.amazon || 0;
+                document.getElementById('youtube').value = entry.youtube || 0;
+                document.getElementById('youtubeTv').value = entry.youtubeTv || 0;
+                
+                console.log('Entry loaded successfully');
+            } else {
+                console.log('No entry found for', date, '- clearing form');
+                // Clear the form
+                document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                document.querySelectorAll('input[type="text"], input[type="number"], input[type="time"], textarea, select').forEach(input => input.value = '');
+                document.querySelectorAll('input[type="range"]').forEach(range => range.value = 0);
+                if (document.getElementById('waterDisplay')) document.getElementById('waterDisplay').textContent = '0 oz';
+                if (document.getElementById('proteinDisplay')) document.getElementById('proteinDisplay').textContent = '0 g';
+                if (document.getElementById('nicotineDisplay')) document.getElementById('nicotineDisplay').textContent = '0';
+            }
         }
 
 
