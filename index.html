@@ -1454,8 +1454,16 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async function() {
-            updateCurrentDateDisplay();
+            // Set date picker to today
+            const picker = document.getElementById('datePicker');
+            if (picker) {
+                picker.value = currentDate;
+            }
+            
+            // Load data from Firebase
             await loadDataFromFirebase();
+            
+            // Load today's entry
             loadToday();
         });
     </script>
