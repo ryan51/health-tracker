@@ -1,0 +1,3118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Memento Mori">
+    
+    <!-- App Icons -->
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="apple-touch-icon" href="app-icon-180.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="app-icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="app-icon-512.png">
+    
+    <title>Memento Mori - Health Tracker</title>
+    
+    <!--
+    ============================================================================
+    HEALTH TRACKER v73 - STABLE WORKING VERSION
+    ============================================================================
+    Last Updated: December 18, 2024
+    
+    ✅ CONFIRMED WORKING:
+    - Initial page load displays all saved data correctly
+    - Media inputs save/load per date (Apple TV+, Netflix, Paramount+, etc.)
+    - Fasting hours auto-calculate on page load AND manual entry
+    - All medications, supplements, diet, exercise data persists correctly
+    - Firebase cloud sync via manual "Save Entry" button
+    - Date switching works without data loss
+    
+    🔧 CRITICAL FIXES IN v73:
+    1. Fixed initial load bug - switched from loadToday() to loadDate()
+    2. Removed "agitated" field reference (field doesn't exist, caused JS error)
+    3. Removed waterDisplay/proteinDisplay references (don't exist, caused errors)
+    4. Added calculateFasting() call after loading times from database
+    5. Media values parse as numbers before saving (parseFloat)
+    
+    🎨 UI IMPROVEMENTS:
+    - Media: Number inputs with -/+ buttons (0.5 decimal increments)
+    - Header: Gray background (#cbd5e1), dark text
+    - Save button: Green (#10b981)
+    - Typography: Headers weight 400, Labels weight 600
+    
+    🐛 REMAINING SLIDERS (Optional Future Replacement):
+    - Water, Protein, Alcohol, Nicotine (Diet section)
+    - Headache, Lightheaded, Depressed, Stomach, Sinuses (Ailments)
+    
+    📝 DEPLOYMENT:
+    - GitHub Pages: ryan51.github.io/health-tracker/index-v73.html
+    - Custom domain ready: Works on any HTTPS server
+    - Single file: No build process needed
+    
+    ============================================================================
+    -->
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --secondary: #64748b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg: #ffffff;
+            --surface: #f8fafc;
+            --text: #0f172a;
+            --border: #e2e8f0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--surface);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 400;
+        }
+        
+        label {
+            font-weight: 600;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.02);
+            color: #0f172a;
+            padding: 1.5rem;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .sync-status {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.875rem;
+        }
+
+        .sync-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        .sync-indicator.syncing {
+            background: var(--warning);
+        }
+
+        .sync-indicator.offline {
+            background: var(--secondary);
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        .sync-notice {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border-radius: 2px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            text-align: center;
+        }
+
+        .sync-notice h2 {
+            margin-bottom: 0.5rem;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 2px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+        button.secondary {
+            background: var(--secondary);
+        }
+
+        button.secondary:hover {
+            background: #475569;
+        }
+
+        button.success {
+            background: #10b981;
+        }
+        
+        button.success:hover {
+            background: #059669;
+        }
+
+        button.danger {
+            background: var(--danger);
+        }
+
+        button.danger:hover {
+            background: #dc2626;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+            padding: 0.5rem;
+            background: white;
+            border-radius: 2px;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+        }
+
+        .nav-tabs button {
+            padding: 0.75rem 1.25rem;
+            background: transparent;
+            color: var(--secondary);
+            border-radius: 2px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            white-space: nowrap;
+        }
+
+        .nav-tabs button:hover {
+            background: var(--surface);
+            color: var(--primary);
+            transform: none;
+        }
+
+        .nav-tabs button.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        .view h2 {
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+        }
+
+        .form-section {
+            margin-bottom: 2rem;
+        }
+
+        .form-section h3 {
+            margin-bottom: 1rem;
+            color: #4b5563;
+            font-size: 2rem;
+            line-height: 1.125em;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .energy-log {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--surface);
+            border-radius: 2px;
+        }
+        
+        .energy-log:empty {
+            display: none;
+        }
+
+        .energy-entry {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background: white;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+        }
+
+        .energy-entry span {
+            font-weight: 600;
+        }
+
+        .energy-entry button {
+            background: var(--danger);
+            padding: 0.25rem 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            overflow-x: auto;
+            display: block;
+        }
+
+        .history-table th,
+        .history-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .history-table th {
+            background: var(--surface);
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+
+        .history-table tr:hover {
+            background: var(--surface);
+        }
+        
+        /* Medications Grid */
+        .medications-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        /* Weights Exercise Cards */
+        .weights-exercise {
+            background: var(--surface);
+            padding: 1rem;
+            border-radius: 2px;
+            margin-bottom: 0.75rem;
+        }
+        
+        .weights-exercise-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            gap: 1rem;
+        }
+        
+        .weights-exercise-info {
+            flex: 1;
+        }
+        
+        .weights-exercise-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .weights-exercise-details {
+            color: var(--secondary);
+        }
+        
+        .weights-exercise-notes {
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            font-style: italic;
+        }
+        
+        .weights-exercise-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        .weights-exercise-time {
+            font-size: 0.875rem;
+            color: var(--secondary);
+        }
+        
+        .weights-btn-edit {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.5rem 0.75rem;
+            border-radius: 2px;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+        
+        .weights-btn-delete {
+            background: var(--danger);
+            color: white;
+            border: none;
+            padding: 0.5rem 0.75rem;
+            border-radius: 2px;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.1rem;
+            }
+            
+            .header-content {
+                flex-wrap: nowrap;
+                gap: 0.5rem;
+            }
+            
+            .container {
+                padding: 0.5rem;
+            }
+
+            .view {
+                padding: 1rem;
+            }
+            
+            .medications-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            
+            .weights-exercise-content {
+                flex-direction: column;
+            }
+            
+            .weights-exercise-actions {
+                width: 100%;
+                flex-wrap: wrap;
+            }
+            
+            .weights-btn-edit,
+            .weights-btn-delete {
+                flex: 1;
+                min-width: 100px;
+            }
+            
+            .weights-exercise-time {
+                width: 100%;
+                text-align: left;
+                margin-bottom: 0.5rem;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .action-buttons button {
+                width: 100%;
+            }
+            
+            /* Prevent zoom on input focus */
+            input, select, textarea {
+                font-size: 16px !important;
+            }
+        }
+        /* Number input with +/- buttons */
+        .number-input-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .number-input-group button {
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            font-size: 1.25rem;
+            line-height: 1;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .number-input-group button:hover {
+            background: #1d4ed8;
+            transform: none;
+        }
+        
+        .number-input-group input[type="number"] {
+            width: 80px;
+            text-align: center;
+            font-size: 1rem;
+            font-weight: 600;
+            padding: 0.5rem;
+            border: 2px solid var(--border);
+            border-radius: 2px;
+        }
+        
+        /* Back to Top Button */
+        #backToTop {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 50px;
+            height: 50px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+            z-index: 1000;
+        }
+        
+        #backToTop.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        #backToTop:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1><a href="/" style="color: #0f172a; text-decoration: none; text-transform: uppercase;" onclick="showView('daily'); return false;">Memento Mori</a></h1>
+            <button onclick="showView('settings')" style="padding: 0.5rem 1rem; background: white; border: none; color: #0f172a; border-radius: 2px; cursor: pointer; font-weight: 400; text-transform: uppercase;">Settings</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Settings View -->
+        <div id="settingsView" class="view">
+            <button onclick="showView('daily')" class="secondary" style="margin-bottom: 1rem;">← Back to Daily Entry</button>
+            <h2>⚙️ Settings</h2>
+            
+            <!-- Sub-navigation for Settings sections -->
+            <div style="display: flex; gap: 0.5rem; margin: 1rem 0; padding: 0.5rem; background: white; border-radius: 2px; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); overflow-x: auto;">
+                <button onclick="showView('settings')" style="padding: 0.75rem 1.25rem; background: var(--primary); color: white; border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">⚙️ Settings</button>
+                <button onclick="showView('energy')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">⚡ Energy</button>
+                <button onclick="showView('agitation')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😤 Agitation</button>
+                <button onclick="showView('notes')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📝 Notes</button>
+                <button onclick="showView('history')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📋 History</button>
+            </div>
+            
+            <!-- Sync Status -->
+            <div style="background: white; border: 2px solid #e5e7eb; padding: 1.5rem; border-radius: 2px; margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                <h3 style="margin-top: 0; color: #1f2937;">Sync Status</h3>
+                <div class="sync-status" style="justify-content: flex-start;">
+                    <div class="sync-indicator" id="syncIndicator"></div>
+                    <span id="syncText">Syncing...</span>
+                    <span id="entriesCount" style="margin-left: 1rem;">0 entries</span>
+                </div>
+            </div>
+            
+            <!-- Firebase Sync Status -->
+            <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 2rem; border-radius: 2px; margin-bottom: 2rem; text-align: center; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);">
+                <h3 style="margin: 0 0 0.5rem 0; font-size: 1.5rem;">🔥 Firebase Cloud Sync Enabled</h3>
+                <p style="margin: 0; opacity: 0.95;">All changes save automatically and sync across all your devices in real-time!</p>
+            </div>
+            
+            <!-- Data Management -->
+            <div style="background: white; border: 2px solid #e5e7eb; padding: 2rem; border-radius: 2px; margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                <h3 style="margin-top: 0; color: #1f2937;">📊 Data Management</h3>
+                <div style="display: flex; gap: 1rem; margin: 1.5rem 0; flex-wrap: wrap;">
+                    <button onclick="importCSV()" style="padding: 0.75rem 1.5rem; background: #4285f4; color: white; border: none; border-radius: 2px; cursor: pointer; font-weight: 600; font-size: 1rem; box-shadow: 0 2px 4px rgba(66, 133, 244, 0.3); transition: all 0.2s;">📥 Import CSV</button>
+                    <button onclick="downloadCSV()" style="padding: 0.75rem 1.5rem; background: #4285f4; color: white; border: none; border-radius: 2px; cursor: pointer; font-weight: 600; font-size: 1rem; box-shadow: 0 2px 4px rgba(66, 133, 244, 0.3); transition: all 0.2s;">📤 Export CSV</button>
+                </div>
+            </div>
+            
+            <!-- Danger Zone -->
+            <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 2px; padding: 2rem; box-shadow: 0 2px 4px rgba(255, 193, 7, 0.2);">
+                <h3 style="margin-top: 0; color: #856404;">⚠️ Danger Zone</h3>
+                <button onclick="if(confirm('⚠️ This will delete ALL data! Have you exported?') && confirm('Really delete everything?')) { alert('Clear function needs to be implemented'); }" style="background: #dc3545; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 2px; cursor: pointer; font-weight: 600; width: 100%; font-size: 1rem; box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);">🗑️ Clear All Data</button>
+                <p style="font-size: 0.875rem; color: #856404; margin: 0.75rem 0 0 0; line-height: 1.5;">⚠️ This will permanently delete all health entries from Firebase. Make sure to export your data first!</p>
+            </div>
+        </div>
+
+        
+
+
+        <!-- Navigation -->
+        <div class="nav-tabs">
+            <button class="active" onclick="showView('daily')">📝 Daily Entry</button>
+            <button onclick="showView('meds')">💊 Medications</button>
+            <button onclick="showView('diet')">🍽️ Diet</button>
+            <button onclick="showView('exercise')">💪 Exercise</button>
+            <button onclick="showView('weights')">🏋️ Weights</button>
+            <button onclick="showView('ailments')">🩺 Ailments</button>
+            <button onclick="showView('media')">📺 Media</button>
+        </div>
+
+        <!-- Daily Entry View -->
+        <div id="dailyView" class="view active">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <h2 style="margin: 0;">Daily Entry for</h2>
+                    <input type="date" id="datePicker" onchange="changeDate()" style="padding: 0.5rem; border: 2px solid #4285f4; border-radius: 2px; font-size: 1rem; cursor: pointer;">
+                </div>
+                <button onclick="saveEntry()" style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 2px; font-weight: 600; cursor: pointer;">Save Entry</button>
+            </div>
+            
+            <div class="form-section">
+                <h3>Medications & Supplements</h3>
+                <div class="medications-grid">
+                    
+                    <!-- Column 1: Focus -->
+                    <div>
+                        <h4 style="margin: 0 0 1rem 0; color: #4285f4; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em;">Focus</h4>
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="concerta">
+                                <label for="concerta">Concerta</label>
+                            </div>
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="boost">
+                                <label for="boost">Boost</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Column 2: Supplements Part 1 -->
+                    <div>
+                        <h4 style="margin: 0 0 1rem 0; color: #4285f4; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em;">Supplements</h4>
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="vitaminC">
+                                <label for="vitaminC">Vitamin C</label>
+                            </div>
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="omega3">
+                                <label for="omega3">Omega-3</label>
+                            </div>
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="zma">
+                                <label for="zma">ZMA (ON)</label>
+                            </div>
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="no2">
+                                <label for="no2">NO2 (pure)</label>
+                            </div>
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="probiotic">
+                                <label for="probiotic">Probiotic</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Column 3: Supplements Part 2 -->
+                    <div>
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="lz">
+                                <label for="lz">L/Z (NOW)</label>
+                            </div>
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="d3k">
+                                <label for="d3k">D3/K (pure)</label>
+                            </div>
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="melatonin">
+                                <label for="melatonin">Melatonin</label>
+                            </div>
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="mblue">
+                                <label for="mblue">M-Blue</label>
+                            </div>
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="potassium">
+                                <label for="potassium">Potassium</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Column 3: Additional (Creatine moved here) -->
+                    <div>
+                        <h4 style="margin: 0 0 1rem 0; color: #4285f4; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em;">Performance</h4>
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="creatine">
+                                <label for="creatine">Creatine</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+
+                <h3>Diet & Nutrition</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="weight">Weight</label>
+                        <input type="number" id="weight" step="0.1">
+                    </div>
+                </div>
+                
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label for="diet">Diet Notes</label>
+                    <textarea id="diet" rows="3" style="width: 100%; resize: vertical;"></textarea>
+                </div>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="startEating">Start Eating</label>
+                        <input type="time" id="startEating" oninput="calculateFasting()" onchange="calculateFasting()">
+                    </div>
+                    <div class="form-group">
+                        <label for="endEating">End Eating</label>
+                        <input type="time" id="endEating" oninput="calculateFasting()" onchange="calculateFasting()">
+                    </div>
+                    <div class="form-group">
+                        <label>Fasting Hours (auto-calc)</label>
+                        <input type="text" id="fasting" readonly>
+                    </div>
+                                        <div class="form-group">
+                        <label for="water">Water (oz)</label>
+                        <input type="range" id="water" min="0" max="80" value="0" style="width: 100%;"><span id="waterDisplay" style="margin-left: 0.5rem; font-weight: 600;">0 oz</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="protein">Protein (g)</label>
+                        <input type="range" id="protein" min="0" max="160" value="0" style="width: 100%;"><span id="proteinDisplay" style="margin-left: 0.5rem; font-weight: 600;">0 g</span>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="carbs">
+                        <label for="carbs">Carbs (&lt;50g)</label>
+                    </div>
+                    <div class="form-group">
+                        <label for="alcohol">Alcohol (0-10): <span id="alcoholValue">0</span></label>
+                        <input type="range" id="alcohol" min="0" max="10" value="0" oninput="document.getElementById('alcoholValue').textContent = this.value">
+                    
+                    </div>
+
+                    <div>
+                        <label>Nicotine (0-6): <span id="nicotineDisplay" style="font-weight: 600;">0</span></label>
+                        <input type="range" id="nicotine" min="0" max="6" value="0" oninput="document.getElementById('nicotineDisplay').textContent = this.value"></div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="cheatMeal">
+                        <label for="cheatMeal">Cheat Meal</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="cheatDessert">
+                        <label for="cheatDessert">Cheat Dessert</label>
+                    </div>
+                </div>
+                
+            </div>
+
+            <div class="form-section">
+                <h3>Exercise</h3>
+                <div class="form-group">
+                    <label for="routine">Routine Description</label>
+                    <textarea id="routine"></textarea>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="exercise">Exercise Type(s)</label>
+                        <select id="exercise">
+                        <option value="">Select...</option>
+                        <option value="bike">🚴 Bike</option>
+                        <option value="hike">🥾 Hike</option>
+                        <option value="ruck">🎒 Ruck</option>
+                        <option value="run">🏃 Run</option>
+                        <option value="sauna">🧖 Sauna</option>
+                        <option value="sprints">⚡ Sprints</option>
+                        <option value="weights">🏋️ Weights</option>
+                        <option value="walk">🚶 Walk</option>
+                        <option value="yoga">🧘 Yoga</option>
+                    </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="duration">Duration (min)</label>
+                        <input type="number" id="duration" min="0" step="1" placeholder="30" inputmode="numeric">
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="stretch">
+                        <label for="stretch">Stretch</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="meditate">
+                        <label for="meditate">Meditate</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="body">Body Notes (soreness, issues)</label>
+                    <textarea id="body"></textarea>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>Ailments (0-10 Scale)</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="headache">Headache: <span id="headacheValue">0</span></label>
+                        <input type="range" id="headache" min="0" max="10" value="0" oninput="document.getElementById('headacheValue').textContent = this.value">
+                    </div>
+                    <div class="form-group">
+                        <label for="lightheaded">Lightheaded: <span id="lightheadedValue">0</span></label>
+                        <input type="range" id="lightheaded" min="0" max="10" value="0" oninput="document.getElementById('lightheadedValue').textContent = this.value">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="depressed">Depressed: <span id="depressedValue">0</span></label>
+                        <input type="range" id="depressed" min="0" max="10" value="0" oninput="document.getElementById('depressedValue').textContent = this.value">
+                    </div>
+                    <div class="form-group">
+                        <label for="stomach">Stomach: <span id="stomachValue">0</span></label>
+                        <input type="range" id="stomach" min="0" max="10" value="0" oninput="document.getElementById('stomachValue').textContent = this.value">
+                    </div>
+                    <div class="form-group">
+                        <label for="sinuses">Sinuses: <span id="sinusesValue">0</span></label>
+                        <input type="range" id="sinuses" min="0" max="10" value="0" oninput="document.getElementById('sinusesValue').textContent = this.value">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>Energy & Agitation Tracking</h3>
+                <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
+                    <button onclick="logEnergy()">⚡ Log Current Energy</button>
+                    <button onclick="logAgitation()" style="background: #f59e0b;">😤 Log Current Agitation</button>
+                </div>
+                <div id="energyLog" class="energy-log"></div>
+                <div id="agitationLog" class="energy-log" style="margin-top: 1rem;"></div>
+            </div>
+
+            <div class="form-section">
+                <h3>Notes</h3>
+                <div class="form-group">
+                    <textarea id="notes" placeholder="Any additional notes for the day..."></textarea>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>Media</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="appleTv">Apple TV+ (hours)</label>
+                        <div class="number-input-group">
+                            <button type="button" onclick="adjustMedia('appleTv', -0.5)">−</button>
+                            <input type="number" id="appleTv" min="0" max="10" step="0.5" value="0" oninput="validateMediaInput(this)">
+                            <button type="button" onclick="adjustMedia('appleTv', 0.5)">+</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="netflix">Netflix (hours)</label>
+                        <div class="number-input-group">
+                            <button type="button" onclick="adjustMedia('netflix', -0.5)">−</button>
+                            <input type="number" id="netflix" min="0" max="10" step="0.5" value="0" oninput="validateMediaInput(this)">
+                            <button type="button" onclick="adjustMedia('netflix', 0.5)">+</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="paramount">Paramount+ (hours)</label>
+                        <div class="number-input-group">
+                            <button type="button" onclick="adjustMedia('paramount', -0.5)">−</button>
+                            <input type="number" id="paramount" min="0" max="10" step="0.5" value="0" oninput="validateMediaInput(this)">
+                            <button type="button" onclick="adjustMedia('paramount', 0.5)">+</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="amazon">Amazon Prime (hours)</label>
+                        <div class="number-input-group">
+                            <button type="button" onclick="adjustMedia('amazon', -0.5)">−</button>
+                            <input type="number" id="amazon" min="0" max="10" step="0.5" value="0" oninput="validateMediaInput(this)">
+                            <button type="button" onclick="adjustMedia('amazon', 0.5)">+</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="youtube">YouTube (hours)</label>
+                        <div class="number-input-group">
+                            <button type="button" onclick="adjustMedia('youtube', -0.5)">−</button>
+                            <input type="number" id="youtube" min="0" max="10" step="0.5" value="0" oninput="validateMediaInput(this)">
+                            <button type="button" onclick="adjustMedia('youtube', 0.5)">+</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="youtubeTv">YouTube TV (hours)</label>
+                        <div class="number-input-group">
+                            <button type="button" onclick="adjustMedia('youtubeTv', -0.5)">−</button>
+                            <input type="number" id="youtubeTv" min="0" max="10" step="0.5" value="0" oninput="validateMediaInput(this)">
+                            <button type="button" onclick="adjustMedia('youtubeTv', 0.5)">+</button>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button onclick="saveEntry()" style="background: #10b981; color: white;">Save Entry</button>
+            </div>
+        </div>
+
+        <!-- Other Views -->
+        <div id="medsView" class="view">
+            
+        <!-- Settings View -->
+        <h2>💊 Medication History</h2>
+            <div id="medsHistory"></div>
+        </div>
+
+        <div id="dietView" class="view">
+            <h2>🍽️ Diet History</h2>
+            <div id="dietHistory"></div>
+        </div>
+
+        <div id="exerciseView" class="view">
+            <h2>💪 Exercise History</h2>
+            <div id="exerciseHistory"></div>
+        </div>
+
+
+        <!-- Weights View -->
+        <div id="weightsView" class="view">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <h2 style="margin: 0;">🏋️ Weights Tracking for</h2>
+                    <input type="date" id="weightsDatePicker" onchange="changeWeightsDate()" style="padding: 0.5rem; border: 2px solid #4285f4; border-radius: 2px; font-size: 1rem; cursor: pointer;">
+                </div>
+            </div>
+            
+            <!-- Current Workout Name Display -->
+            <div id="currentWorkoutDisplay" style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); color: white; padding: 1.5rem; border-radius: 2px; margin-bottom: 1.5rem; text-align: center; display: none;">
+                <h3 style="margin: 0 0 0.5rem 0; font-size: 1.5rem; font-weight: 700;" id="currentWorkoutName"></h3>
+                <button onclick="editCurrentWorkout()" style="padding: 0.5rem 1rem; background: white; color: var(--primary); border: none; border-radius: 2px; cursor: pointer; font-weight: 600; font-size: 0.875rem;">Edit Workout Name</button>
+            </div>
+            
+            <div style="background: white; border-radius: 2px; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);">
+                <h3 style="margin-top: 0;">Add Workout</h3>
+                
+                <!-- Toggle for Session Info -->
+                <div style="margin-bottom: 1.5rem;">
+                    <button onclick="toggleSessionInfo()" style="padding: 0.5rem 1rem; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 2px; cursor: pointer; font-weight: 600; font-size: 0.875rem;">
+                        <span id="sessionInfoToggleIcon">▼</span> Session Info (Name & Duration)
+                    </button>
+                </div>
+                
+                <!-- Collapsible Session Info -->
+                <div id="sessionInfoSection" style="display: none; margin-bottom: 1.5rem; padding: 1rem; background: var(--surface); border-radius: 2px;">
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Workout Name (optional)</label>
+                        <input type="text" id="workoutName" placeholder="e.g., Push Day, FB-01-25, Leg Day..." 
+                               style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 2px; font-size: 1rem;"
+                               onblur="updateWorkoutNameDisplay()">
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Session Duration (min)</label>
+                        <input type="number" id="sessionDuration" min="0" step="1" placeholder="45" inputmode="numeric" 
+                               style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 2px; font-size: 1rem;">
+                    </div>
+                </div>
+                
+                <div style="position: relative; margin-bottom: 1.5rem;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Exercise Name</label>
+                    <input type="text" id="exerciseName" placeholder="Start typing exercise name..." 
+                           autocomplete="off"
+                           style="width: 100%; padding: 0.75rem; border: 2px solid var(--border); border-radius: 2px; font-size: 1rem;"
+                           oninput="showExerciseAutocomplete(this.value)"
+                           onfocus="showExerciseAutocomplete(this.value)"
+                           onblur="setTimeout(() => hideExerciseAutocomplete(), 200)">
+                    <div id="exerciseAutocomplete" style="display: none; position: absolute; z-index: 1000; background: white; border: 2px solid var(--primary); border-radius: 2px; margin-top: 0.25rem; max-height: 300px; overflow-y: auto; width: 100%; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"></div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                    <div>
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Sets</label>
+                        <input type="number" id="sets" min="1" value="3" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 2px;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Reps</label>
+                        <input type="number" id="reps" min="1" value="10" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 2px;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Weight (lbs)</label>
+                        <input type="number" id="weightAmount" min="0" step="5" value="0" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 2px;">
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Notes (optional)</label>
+                    <textarea id="workoutNotes" placeholder="Form notes, how it felt, etc..." style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 2px; min-height: 80px; resize: vertical;"></textarea>
+                </div>
+                
+                <button onclick="addWorkout()" style="width: 100%; padding: 1rem; background: var(--primary); color: white; border: none; border-radius: 2px; font-weight: 600; font-size: 1rem; cursor: pointer;">
+                    ➕ Add Workout
+                </button>
+            </div>
+            
+            <div id="todaysWorkouts" style="background: white; border-radius: 2px; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);">
+                <h3 style="margin-top: 0;">Workouts for <span id="selectedDateDisplay">Today</span></h3>
+                <div id="todaysWorkoutsList"></div>
+            </div>
+        </div>
+
+        <div id="ailmentsView" class="view">
+            <h2>🩺 Ailments History</h2>
+            <div id="ailmentsHistory"></div>
+        </div>
+
+        <div id="energyView" class="view">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <h2 style="margin: 0;">⚡ Energy Tracking for</h2>
+                    <input type="date" id="energyDatePicker" onchange="changeEnergyDate()" style="padding: 0.5rem; border: 2px solid #4285f4; border-radius: 2px; font-size: 1rem; cursor: pointer;">
+                </div>
+                <button onclick="logEnergyForDate()" style="padding: 0.75rem 1.5rem; background: var(--success); color: white; border: none; border-radius: 2px; font-weight: 600; cursor: pointer;">⚡ Log Energy Now</button>
+            </div>
+            
+            <div style="background: white; border-radius: 2px; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);">
+                <h3 style="margin-top: 0;">Energy Logs for <span id="energyDateDisplay">Today</span></h3>
+                <div id="energyLogsForDate"></div>
+            </div>
+            
+            <div style="background: white; border-radius: 2px; padding: 2rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);">
+                <h3 style="margin-top: 0;">📊 All Energy History</h3>
+                <div id="energyHistoryView"></div>
+            </div>
+        </div>
+
+        <!-- Agitation View -->
+        <div id="agitationView" class="view">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <h2 style="margin: 0;">😤 Agitation Tracking for</h2>
+                    <input type="date" id="agitationDatePicker" onchange="changeAgitationDate()" style="padding: 0.5rem; border: 2px solid #f59e0b; border-radius: 2px; font-size: 1rem; cursor: pointer;">
+                </div>
+                <button onclick="logAgitationForDate()" style="padding: 0.75rem 1.5rem; background: #f59e0b; color: white; border: none; border-radius: 2px; font-weight: 600; cursor: pointer;">😤 Log Agitation Now</button>
+            </div>
+            
+            <div style="background: white; border-radius: 2px; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);">
+                <h3 style="margin-top: 0;">Agitation Logs for <span id="agitationDateDisplay">Today</span></h3>
+                <div id="agitationLogsForDate"></div>
+            </div>
+            
+            <div style="background: white; border-radius: 2px; padding: 2rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);">
+                <h3 style="margin-top: 0;">📊 All Agitation History</h3>
+                <div id="agitationHistoryView"></div>
+            </div>
+        </div>
+
+                <div id="notesView" class="view">
+            <h2>📝 Notes History</h2>
+            <div id="notesHistory"></div>
+        </div>
+
+        <div id="mediaView" class="view">
+            <h2>📺 Media History</h2>
+            <div id="mediaHistory"></div>
+        </div>
+
+        <div id="historyView" class="view">
+            <h2>📋 Complete History</h2>
+            <button onclick="downloadCSV()" class="success" style="margin-bottom: 1rem;">⬇️ Download CSV</button>
+            <div id="completeHistory"></div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCOkn1TUMnMQLpipLaBj3joU18-X9_YY9A",
+            authDomain: "health-tracker-c72a2.firebaseapp.com",
+            projectId: "health-tracker-c72a2",
+            storageBucket: "health-tracker-c72a2.firebasestorage.app",
+            messagingSenderId: "322478791608",
+            appId: "1:322478791608:web:ba1e127icce0c6b2688d4d"
+        };
+
+        // Initialize Firebase (wrapped to ensure it loads)
+        let db, healthCollection;
+        
+        function initFirebase() {
+            if (typeof firebase !== 'undefined') {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                healthCollection = db.collection('health-entries');
+                console.log('Firebase initialized successfully');
+            } else {
+                console.error('Firebase SDK not loaded yet');
+            }
+        }
+        
+        // Try to initialize immediately
+        initFirebase();
+
+        // Global state
+        let healthData = [];
+        
+        // Get local date string in YYYY-MM-DD format (fixes timezone issues)
+        function getLocalDateString() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+        
+        let currentDate = getLocalDateString();
+        let isOnline = navigator.onLine;
+
+        // Update sync status
+        function updateSyncStatus(status, text) {
+            const indicator = document.getElementById('syncIndicator');
+            const syncText = document.getElementById('syncText');
+            
+            indicator.className = 'sync-indicator ' + status;
+            syncText.textContent = text;
+        }
+
+        // Monitor online/offline status
+        window.addEventListener('online', () => {
+            isOnline = true;
+            updateSyncStatus('', 'Online - Syncing...');
+        });
+
+        window.addEventListener('offline', () => {
+            isOnline = false;
+            updateSyncStatus('offline', 'Offline');
+        });
+
+        // Load data from Firebase
+        async function loadDataFromFirebase() {
+            try {
+                updateSyncStatus('syncing', 'Loading...');
+                
+                const snapshot = await healthCollection.orderBy('date', 'desc').get();
+                healthData = [];
+                
+                snapshot.forEach(doc => {
+                    healthData.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                
+                updateEntriesCount();
+                updateSyncStatus('', 'Synced');
+                console.log('✅ Loaded', healthData.length, 'entries from Firebase');
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+                updateSyncStatus('offline', 'Error loading');
+            }
+        }
+
+        // Update entries count
+        function updateEntriesCount() {
+            document.getElementById('entriesCount').textContent = `${healthData.length} entries`;
+        }
+
+        // Update current date display
+        function updateCurrentDateDisplay() {
+            document.getElementById('currentDateDisplay').textContent = new Date(currentDate).toLocaleDateString();
+        }
+
+        // Save entry to Firebase
+        async function saveEntry() {
+            try {
+                updateSyncStatus('syncing', 'Saving...');
+                
+                console.log('=== SAVING ENTRY ===');
+                console.log('Date:', currentDate);
+                
+                const entry = {
+                    date: currentDate,
+                    // Medications
+                    concerta: document.getElementById('concerta').checked,
+                    vitaminC: document.getElementById('vitaminC').checked,
+                    omega3: document.getElementById('omega3').checked,
+                    zma: document.getElementById('zma').checked,
+                    creatine: document.getElementById('creatine').checked,
+                    no2: document.getElementById('no2').checked,
+                    probiotic: document.getElementById('probiotic').checked,
+                    lz: document.getElementById('lz').checked,
+                    d3k: document.getElementById('d3k').checked,
+                    melatonin: document.getElementById('melatonin').checked,
+                    mblue: document.getElementById('mblue').checked,
+                    potassium: document.getElementById('potassium').checked,
+                    boost: document.getElementById('boost').checked,
+                    // Diet
+                    weight: document.getElementById('weight').value,
+                    diet: document.getElementById('diet').value,
+                    startEating: document.getElementById('startEating').value,
+                    endEating: document.getElementById('endEating').value,
+                    fasting: document.getElementById('fasting').value,
+                    
+                    water: document.getElementById('water').value,
+                    protein: document.getElementById('protein').value,
+                    carbs: document.getElementById('carbs').checked,
+                    alcohol: document.getElementById('alcohol').value,
+                    cheatMeal: document.getElementById('cheatMeal').checked,
+                    cheatDessert: document.getElementById('cheatDessert').checked,
+                    body: document.getElementById('body').value,
+                    // Exercise
+                    routine: document.getElementById('routine').value,
+                    exercise: document.getElementById('exercise').value,
+                    duration: document.getElementById('duration').value,
+                    stretch: document.getElementById('stretch').checked,
+                    meditate: document.getElementById('meditate').checked,
+                    // Ailments
+                    headache: document.getElementById('headache').value,
+                    lightheaded: document.getElementById('lightheaded').value,
+
+                    depressed: document.getElementById('depressed').value,
+                    stomach: document.getElementById('stomach').value,
+                    sinuses: document.getElementById('sinuses').value,
+                    // Energy
+                    energy: getCurrentEnergyLog(),
+                    // Agitation
+                    agitation: getCurrentAgitationLog(),
+                    // Notes
+                    notes: document.getElementById('notes').value,
+                    // Media
+                    appleTv: parseFloat(document.getElementById('appleTv').value) || 0,
+                    netflix: parseFloat(document.getElementById('netflix').value) || 0,
+                    paramount: parseFloat(document.getElementById('paramount').value) || 0,
+                    amazon: parseFloat(document.getElementById('amazon').value) || 0,
+                    youtube: parseFloat(document.getElementById('youtube').value) || 0,
+                    youtubeTv: parseFloat(document.getElementById('youtubeTv').value) || 0,
+                    nicotine: document.getElementById('nicotine').value,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                
+                console.log('💾 Saving entry for date:', currentDate);
+                console.log('💾 Media values being saved:', {
+                    appleTv: entry.appleTv,
+                    netflix: entry.netflix,
+                    paramount: entry.paramount,
+                    amazon: entry.amazon,
+                    youtube: entry.youtube,
+                    youtubeTv: entry.youtubeTv
+                });
+                
+                console.log('Media values being saved:', {
+                    appleTv: entry.appleTv,
+                    netflix: entry.netflix,
+                    paramount: entry.paramount,
+                    amazon: entry.amazon,
+                    youtube: entry.youtube,
+                    youtubeTv: entry.youtubeTv
+                });
+                console.log('Full entry object:', entry);
+
+                // Find existing entry for today
+                const existingEntry = healthData.find(e => e.date === currentDate);
+                console.log('🔍 Looking for existing entry for date:', currentDate);
+                console.log('   healthData has', healthData.length, 'entries');
+                console.log('   All dates:', healthData.map(e => e.date).join(', '));
+                console.log('   Entries for', currentDate + ':', healthData.filter(e => e.date === currentDate).length);
+                console.log('   Found existing entry?', !!existingEntry);
+                if (existingEntry) {
+                    console.log('   Existing entry ID:', existingEntry.id);
+                    console.log('   Current media values in existing:', {
+                        appleTv: existingEntry.appleTv,
+                        netflix: existingEntry.netflix
+                    });
+                }
+                
+                if (existingEntry && existingEntry.id) {
+                    // Update existing
+                    await healthCollection.doc(existingEntry.id).update(entry);
+                    console.log('Updated existing entry in Firebase');
+                } else {
+                    // Create new
+                    const docRef = await healthCollection.add(entry);
+                    console.log('Created new entry in Firebase with ID:', docRef.id);
+                }
+                
+                // Reload data from Firebase to ensure we have latest
+                console.log('🔄 Reloading all data from Firebase...');
+                const snapshot = await healthCollection.orderBy('date', 'desc').get();
+                healthData = [];
+                snapshot.forEach(doc => {
+                    healthData.push({ id: doc.id, ...doc.data() });
+                });
+                console.log('✅ Reloaded', healthData.length, 'entries from Firebase');
+                
+                updateSyncStatus('', 'Synced');
+                console.log('✅ Entry saved successfully to Firebase');
+                alert('Entry saved and synced!');
+                
+            } catch (error) {
+                console.error('Error saving:', error);
+                updateSyncStatus('offline', 'Save error');
+                alert('Error saving entry. Check console for details.');
+            }
+        }
+
+        // Load today's entry
+        function loadToday() {
+            const entry = healthData.find(e => e.date === currentDate);
+            
+            if (entry) {
+                // Load all fields
+                document.getElementById('concerta').checked = entry.concerta || false;
+                document.getElementById('effexor').checked = entry.effexor || false;
+                document.getElementById('c').checked = entry.c || false;
+                document.getElementById('omega3').checked = entry.omega3 || false;
+                document.getElementById('zma').checked = entry.zma || false;
+                document.getElementById('creatine').checked = entry.creatine || false;
+                document.getElementById('no2').checked = entry.no2 || false;
+                document.getElementById('probiotic').checked = entry.probiotic || false;
+                document.getElementById('lz').checked = entry.lz || false;
+                document.getElementById('d3k').checked = entry.d3k || false;
+                document.getElementById('melatonin').checked = entry.melatonin || false;
+                document.getElementById('mblue').checked = entry.mblue || false;
+                document.getElementById('potassium').checked = entry.potassium || false;
+                document.getElementById('boost').checked = entry.boost || false;
+                document.getElementById('multi').checked = entry.multi || false;
+                document.getElementById('bcaa').checked = entry.bcaa || false;
+                document.getElementById('adrenal').checked = entry.adrenal || false;
+                document.getElementById('msm').checked = entry.msm || false;
+                
+                document.getElementById('weight').value = entry.weight || '';
+                document.getElementById('diet').value = entry.diet || '';
+                document.getElementById('startEating').value = entry.startEating || '';
+                document.getElementById('endEating').value = entry.endEating || '';
+                document.getElementById('water').value = entry.water || '';
+                document.getElementById('protein').value = entry.protein || '';
+                document.getElementById('carbs').checked = entry.carbs || false;
+                document.getElementById('alcohol').value = entry.alcohol || 0;
+                document.getElementById('alcoholValue').textContent = entry.alcohol || 0;
+                document.getElementById('cheatMeal').checked = entry.cheatMeal || false;
+                document.getElementById('cheatDessert').checked = entry.cheatDessert || false;
+                document.getElementById('body').value = entry.body || '';
+                
+                document.getElementById('routine').value = entry.routine || '';
+                document.getElementById('exercise').value = entry.exercise || '';
+                document.getElementById('duration').value = entry.duration || '';
+                document.getElementById('stretch').checked = entry.stretch || false;
+                document.getElementById('meditate').checked = entry.meditate || false;
+                
+                document.getElementById('headache').value = entry.headache || 0;
+                document.getElementById('headacheValue').textContent = entry.headache || 0;
+                document.getElementById('lightheaded').value = entry.lightheaded || 0;
+                document.getElementById('lightheadedValue').textContent = entry.lightheaded || 0;
+                displayAgitationLog(entry.agitation || []);
+                document.getElementById('depressed').value = entry.depressed || 0;
+                document.getElementById('depressedValue').textContent = entry.depressed || 0;
+                document.getElementById('stomach').value = entry.stomach || 0;
+                document.getElementById('stomachValue').textContent = entry.stomach || 0;
+                document.getElementById('sinuses').value = entry.sinuses || 0;
+                document.getElementById('sinusesValue').textContent = entry.sinuses || 0;
+                
+                document.getElementById('notes').value = entry.notes || '';
+                
+                console.log('📂 Loading media for date:', date);
+                console.log('📂 Media values from entry:', {
+                    appleTv: entry.appleTv,
+                    netflix: entry.netflix,
+                    paramount: entry.paramount,
+                    amazon: entry.amazon,
+                    youtube: entry.youtube,
+                    youtubeTv: entry.youtubeTv
+                });
+                
+                document.getElementById('appleTv').value = parseFloat(entry.appleTv || 0).toFixed(1);
+                document.getElementById('netflix').value = parseFloat(entry.netflix || 0).toFixed(1);
+                document.getElementById('paramount').value = parseFloat(entry.paramount || 0).toFixed(1);
+                document.getElementById('amazon').value = parseFloat(entry.amazon || 0).toFixed(1);
+                document.getElementById('youtube').value = parseFloat(entry.youtube || 0).toFixed(1);
+                document.getElementById('youtubeTv').value = parseFloat(entry.youtubeTv || 0).toFixed(1);
+                
+                document.getElementById('nicotine').value = entry.nicotine || '';
+
+                displayEnergyLog(entry.energy || []);
+                calculateFasting();
+            } else {
+                clearForm();
+            }
+        }
+
+        // Clear form
+        function clearForm() {
+            document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            document.querySelectorAll('input[type="text"], input[type="number"], input[type="time"], textarea').forEach(input => input.value = '');
+            document.querySelectorAll('input[type="range"]').forEach(slider => {
+                slider.value = 0;
+                const valueSpan = document.getElementById(slider.id + 'Value');
+                if (valueSpan) valueSpan.textContent = '0';
+            });
+            document.getElementById('energyLog').innerHTML = '';
+        }
+
+        // Calculate fasting
+        function calculateFasting() {
+            const todayStart = document.getElementById('startEating').value;
+            const todayEnd = document.getElementById('endEating').value;
+            const fastingField = document.getElementById('fasting');
+            
+            console.log('⏰ calculateFasting called:', {
+                currentDate: currentDate,
+                todayStart: todayStart,
+                todayEnd: todayEnd,
+                fastingField: fastingField
+            });
+            
+            if (!todayStart) {
+                fastingField.value = '';
+                return;
+            }
+            
+            try {
+                // Need to get previous day's End Eating time
+                // Find yesterday's date
+                const today = new Date(currentDate + 'T00:00:00');
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yesterdayStr = yesterday.toISOString().split('T')[0];
+                
+                // Find yesterday's entry
+                const yesterdayEntry = healthData.find(e => e.date === yesterdayStr);
+                const yesterdayEnd = yesterdayEntry ? yesterdayEntry.endEating : null;
+                
+                if (!yesterdayEnd) {
+                    // No previous day data, calculate simple 24-hour window
+                    if (todayEnd) {
+                        const [startHour, startMin] = todayStart.split(':').map(Number);
+                        const [endHour, endMin] = todayEnd.split(':').map(Number);
+                        
+                        let startMinutes = startHour * 60 + startMin;
+                        let endMinutes = endHour * 60 + endMin;
+                        let eatingWindow = endMinutes > startMinutes ? 
+                            endMinutes - startMinutes : 
+                            (1440 - startMinutes) + endMinutes;
+                        
+                        const fastingHours = (1440 - eatingWindow) / 60;
+                        fastingField.value = fastingHours.toFixed(1) + ' hours';
+                        console.log('Fasting (24hr window):', fastingHours.toFixed(1), 'hours');
+                    } else {
+                        fastingField.value = '';
+                    }
+                    return;
+                }
+                
+                // Calculate from yesterday's end eating to today's start eating
+                const [yEndHour, yEndMin] = yesterdayEnd.split(':').map(Number);
+                const [tStartHour, tStartMin] = todayStart.split(':').map(Number);
+                
+                // Yesterday's end time in minutes from yesterday midnight
+                const yesterdayEndMinutes = yEndHour * 60 + yEndMin;
+                
+                // Today's start time in minutes from today midnight
+                const todayStartMinutes = tStartHour * 60 + tStartMin;
+                
+                // Fasting = time from yesterday's end to today's start
+                // This crosses midnight, so:
+                // Minutes remaining in yesterday + minutes elapsed today
+                const minutesRemainingYesterday = 1440 - yesterdayEndMinutes;
+                const fastingMinutes = minutesRemainingYesterday + todayStartMinutes;
+                const fastingHours = fastingMinutes / 60;
+                
+                fastingField.value = fastingHours.toFixed(1) + ' hours';
+                
+                console.log('Fasting calculated:', {
+                    yesterday: yesterdayStr,
+                    yesterdayEnd: yesterdayEnd,
+                    todayStart: todayStart,
+                    fasting: fastingHours.toFixed(1) + ' hrs'
+                });
+            } catch (error) {
+                console.error('Error calculating fasting:', error);
+                fastingField.value = 'Error';
+            }
+        }
+
+        // Fasting calculation now uses oninput handlers
+
+        // Energy logging
+        function adjustMedia(fieldId, amount) {
+            const input = document.getElementById(fieldId);
+            if (!input) return;
+            
+            let currentValue = parseFloat(input.value) || 0;
+            let newValue = currentValue + amount;
+            
+            // Keep within bounds
+            newValue = Math.max(0, Math.min(10, newValue));
+            
+            // Round to nearest 0.5
+            newValue = Math.round(newValue * 2) / 2;
+            
+            input.value = newValue.toFixed(1);
+        }
+        
+        function validateMediaInput(input) {
+            let value = parseFloat(input.value) ||  0;
+            value = Math.max(0, Math.min(10, value));
+            value = Math.round(value * 2) / 2;
+            input.value = value.toFixed(1);
+        }
+
+        // Energy logging
+        function logEnergy() {
+            const level = prompt('Enter energy level (0-10):');
+            if (level !== null && level >= 0 && level <= 10) {
+                const time = new Date().toLocaleTimeString();
+                
+                // Find or create entry
+                let entry = healthData.find(e => e.date === currentDate);
+                if (!entry) {
+                    // Create a minimal entry object to be filled in by saveEntry
+                    entry = { date: currentDate, energy: [] };
+                    healthData.push(entry);
+                }
+                
+                // Ensure energy array exists
+                if (!entry.energy) {
+                    entry.energy = [];
+                }
+                
+                // Add the log
+                entry.energy.push({ time, level: parseInt(level) });
+                
+                // Display and save
+                displayEnergyLog(entry.energy);
+                saveEntry();
+            }
+        }
+
+        function getCurrentEnergyLog() {
+            const entry = healthData.find(e => e.date === currentDate);
+            return entry ? (entry.energy || []) : [];
+        }
+
+        function displayEnergyLog(log) {
+            const container = document.getElementById('energyLog');
+            container.innerHTML = '';
+            
+            if (log.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--secondary);">No energy logs yet today</p>';
+                return;
+            }
+
+            log.forEach((entry, index) => {
+                const div = document.createElement('div');
+                div.className = 'energy-entry';
+                div.innerHTML = `
+                    <span>${entry.time}</span>
+                    <span>Energy: ${entry.level}/10</span>
+                    <button onclick="deleteEnergyLog(${index})">Delete</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function deleteEnergyLog(index) {
+            const entry = healthData.find(e => e.date === currentDate);
+            if (entry && entry.energy) {
+                entry.energy.splice(index, 1);
+                displayEnergyLog(entry.energy);
+                saveEntry();
+            }
+        }
+
+
+        // Energy tracking with date selection
+        let selectedEnergyDate = getLocalDateString();
+        
+        function changeEnergyDate() {
+            const picker = document.getElementById('energyDatePicker');
+            if (picker && picker.value) {
+                selectedEnergyDate = picker.value;
+                loadEnergyLogsForDate();
+            }
+        }
+        
+        function logEnergyForDate() {
+            const level = prompt('Enter energy level (0-10):');
+            if (level !== null && level >= 0 && level <= 10) {
+                const time = new Date().toLocaleTimeString();
+                
+                // Find or create entry for selected date
+                let entry = healthData.find(e => e.date === selectedEnergyDate);
+                
+                if (!entry) {
+                    // Need to create a new entry for this date
+                    alert('No daily entry exists for this date. Please create a daily entry first, then log energy.');
+                    return;
+                }
+                
+                if (!entry.energy) {
+                    entry.energy = [];
+                }
+                
+                entry.energy.push({ time, level: parseInt(level) });
+                
+                // Save to Firebase
+                saveEnergyToFirebase(entry);
+                loadEnergyLogsForDate();
+                loadEnergyHistory();
+            }
+        }
+        
+        async function saveEnergyToFirebase(entry) {
+            try {
+                updateSyncStatus('syncing', 'Saving energy log...');
+                
+                if (entry.id) {
+                    await healthCollection.doc(entry.id).update({
+                        energy: entry.energy
+                    });
+                } else {
+                    alert('Cannot save - entry not found in Firebase');
+                    return;
+                }
+                
+                updateSyncStatus('', 'Synced');
+                
+            } catch (error) {
+                console.error('Error saving energy:', error);
+                updateSyncStatus('offline', 'Save error');
+                alert('Error saving energy: ' + error.message);
+            }
+        }
+        
+        function loadEnergyLogsForDate() {
+            const entry = healthData.find(e => e.date === selectedEnergyDate);
+            const container = document.getElementById('energyLogsForDate');
+            
+            // Update date display
+            const dateDisplay = document.getElementById('energyDateDisplay');
+            if (dateDisplay) {
+                const displayDate = new Date(selectedEnergyDate + 'T00:00:00');
+                dateDisplay.textContent = displayDate.toLocaleDateString('en-US', { 
+                    weekday: 'short', 
+                    month: 'short', 
+                    day: 'numeric', 
+                    year: 'numeric' 
+                });
+            }
+            
+            if (!entry || !entry.energy || entry.energy.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--secondary); padding: 2rem;">No energy logs for this date</p>';
+                return;
+            }
+            
+            let html = '';
+            entry.energy.forEach((e, index) => {
+                html += `
+                    <div style="background: var(--surface); padding: 1rem; border-radius: 2px; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span style="font-weight: 600; margin-right: 1rem;">${e.time}</span>
+                            <span style="color: var(--primary); font-weight: 600; font-size: 1.1rem;">Energy: ${e.level}/10</span>
+                        </div>
+                        <div>
+                            <button onclick="editEnergyLog('${selectedEnergyDate}', ${index}, '${e.time}', ${e.level})" 
+                                    style="background: var(--primary); color: white; border: none; padding: 0.5rem 0.75rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; margin-right: 0.5rem;">
+                                Edit
+                            </button>
+                            <button onclick="deleteEnergyLogByDate('${selectedEnergyDate}', ${index})" 
+                                    style="background: var(--danger); color: white; border: none; padding: 0.5rem 0.75rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        function editEnergyLog(date, index, oldTime, oldLevel) {
+            const newLevel = prompt(`Edit energy level (0-10):`, oldLevel);
+            if (newLevel !== null && newLevel >= 0 && newLevel <= 10) {
+                const entry = healthData.find(e => e.date === date);
+                if (entry && entry.energy && entry.energy[index]) {
+                    entry.energy[index].level = parseInt(newLevel);
+                    saveEnergyToFirebase(entry);
+                    loadEnergyLogsForDate();
+                    loadEnergyHistory();
+                }
+            }
+        }
+        
+        function deleteEnergyLogByDate(date, index) {
+            if (confirm('Delete this energy log?')) {
+                const entry = healthData.find(e => e.date === date);
+                if (entry && entry.energy) {
+                    entry.energy.splice(index, 1);
+                    saveEnergyToFirebase(entry);
+                    loadEnergyLogsForDate();
+                    loadEnergyHistory();
+                }
+            }
+        }
+        
+        // Agitation edit/delete functions
+        function editAgitationLog(date, index, oldTime, oldLevel, oldNote) {
+            const newLevel = prompt(`Edit agitation level (0-10):`, oldLevel);
+            if (newLevel !== null && newLevel >= 0 && newLevel <= 10) {
+                const newNote = prompt(`Edit note:`, oldNote);
+                const entry = healthData.find(e => e.date === date);
+                if (entry && entry.agitation && entry.agitation[index]) {
+                    entry.agitation[index].level = parseInt(newLevel);
+                    entry.agitation[index].note = newNote || '';
+                    saveAgitationToFirebase(entry);
+                    loadAgitationLogsForDate();
+                    loadAgitationHistory();
+                }
+            }
+        }
+        
+        function deleteAgitationLog(date, index) {
+            if (confirm('Delete this agitation log?')) {
+                const entry = healthData.find(e => e.date === date);
+                if (entry && entry.agitation) {
+                    entry.agitation.splice(index, 1);
+                    saveAgitationToFirebase(entry);
+                    loadAgitationLogsForDate();
+                    loadAgitationHistory();
+                }
+            }
+        }
+
+        // Agitation tracking with date selection (includes notes)
+        let selectedAgitationDate = getLocalDateString();
+        
+        function changeAgitationDate() {
+            const picker = document.getElementById('agitationDatePicker');
+            if (picker && picker.value) {
+                selectedAgitationDate = picker.value;
+                loadAgitationLogsForDate();
+            }
+        }
+        
+        function logAgitation() {
+            const level = prompt('Enter agitation level (0-10):');
+            if (level !== null && level >= 0 && level <= 10) {
+                const note = prompt('Add a note (optional):');
+                const time = new Date().toLocaleTimeString();
+                
+                // Find or create entry
+                let entry = healthData.find(e => e.date === currentDate);
+                if (!entry) {
+                    // Create a minimal entry object to be filled in by saveEntry
+                    entry = { date: currentDate, agitation: [] };
+                    healthData.push(entry);
+                }
+                
+                // Ensure agitation array exists
+                if (!entry.agitation) {
+                    entry.agitation = [];
+                }
+                
+                // Add the log
+                entry.agitation.push({ time, level: parseInt(level), note: note || '' });
+                
+                // Display and save
+                displayAgitationLog(entry.agitation);
+                saveEntry();
+            }
+        }
+        
+        function logAgitationForDate() {
+            const level = prompt('Enter agitation level (0-10):');
+            if (level !== null && level >= 0 && level <= 10) {
+                const note = prompt('Add a note (optional):');
+                const time = new Date().toLocaleTimeString();
+                
+                console.log('=== LOGGING AGITATION ===');
+                console.log('Date:', selectedAgitationDate);
+                console.log('Level:', level);
+                console.log('Note:', note);
+                console.log('Time:', time);
+                
+                let entry = healthData.find(e => e.date === selectedAgitationDate);
+                
+                console.log('Found entry:', entry);
+                
+                if (!entry) {
+                    alert('No daily entry exists for this date. Please create a daily entry first, then log agitation.');
+                    return;
+                }
+                
+                if (!entry.agitation) {
+                    entry.agitation = [];
+                }
+                
+                entry.agitation.push({ time, level: parseInt(level), note: note || '' });
+                
+                console.log('Updated agitation array:', entry.agitation);
+                console.log('Entry ID:', entry.id);
+                
+                saveAgitationToFirebase(entry);
+                loadAgitationLogsForDate();
+                loadAgitationHistory();
+            }
+        }
+        
+        async function saveAgitationToFirebase(entry) {
+            try {
+                updateSyncStatus('syncing', 'Saving agitation log...');
+                
+                if (!entry.id) {
+                    alert('Cannot save - entry not found in Firebase');
+                    return;
+                }
+                
+                // Fetch the latest version of the document from Firebase
+                const docSnapshot = await healthCollection.doc(entry.id).get();
+                if (!docSnapshot.exists) {
+                    alert('Entry no longer exists in Firebase');
+                    return;
+                }
+                
+                // Get current agitation array from Firebase (in case it was updated elsewhere)
+                const currentData = docSnapshot.data();
+                const updatedAgitation = entry.agitation; // This has our new log entry
+                
+                // Update Firebase with the new agitation data
+                await healthCollection.doc(entry.id).update({
+                    agitation: updatedAgitation
+                });
+                
+                // Reload all data to ensure consistency
+                await loadDataFromFirebase();
+                
+                updateSyncStatus('', 'Synced');
+                
+            } catch (error) {
+                console.error('Error saving agitation:', error);
+                updateSyncStatus('offline', 'Save error');
+                alert('Error saving agitation: ' + error.message);
+            }
+        }
+        
+        function getCurrentAgitationLog() {
+            const entry = healthData.find(e => e.date === currentDate);
+            return entry ? (entry.agitation || []) : [];
+        }
+        
+        function displayAgitationLog(log) {
+            const container = document.getElementById('agitationLog');
+            container.innerHTML = '';
+            
+            if (log.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--secondary);">No agitation logs yet today</p>';
+                return;
+            }
+
+            log.forEach((entry, index) => {
+                const div = document.createElement('div');
+                div.className = 'energy-entry';
+                div.innerHTML = `
+                    <div>
+                        <span>${entry.time}</span>
+                        <span style="margin-left: 1rem;">Level: ${entry.level}/10</span>
+                        ${entry.note ? `<div style="font-size: 0.85rem; color: var(--secondary); margin-top: 0.25rem;">${entry.note}</div>` : ''}
+                    </div>
+                    <button onclick="deleteAgitationLog(${index})">Delete</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        function deleteAgitationLog(index) {
+            const entry = healthData.find(e => e.date === currentDate);
+            if (entry && entry.agitation) {
+                entry.agitation.splice(index, 1);
+                displayAgitationLog(entry.agitation);
+                saveEntry();
+            }
+        }
+        
+        function loadAgitationLogsForDate() {
+            const entry = healthData.find(e => e.date === selectedAgitationDate);
+            const container = document.getElementById('agitationLogsForDate');
+            
+            const dateDisplay = document.getElementById('agitationDateDisplay');
+            if (dateDisplay) {
+                const displayDate = new Date(selectedAgitationDate + 'T00:00:00');
+                dateDisplay.textContent = displayDate.toLocaleDateString('en-US', { 
+                    weekday: 'short', 
+                    month: 'short', 
+                    day: 'numeric', 
+                    year: 'numeric' 
+                });
+            }
+            
+            if (!entry || !entry.agitation || entry.agitation.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--secondary); padding: 2rem;">No agitation logs for this date</p>';
+                return;
+            }
+            
+            let html = '';
+            entry.agitation.forEach((e, index) => {
+                html += `
+                    <div style="background: var(--surface); padding: 1rem; border-radius: 2px; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="flex: 1;">
+                            <div>
+                                <span style="font-weight: 600; margin-right: 1rem;">${e.time}</span>
+                                <span style="color: #f59e0b; font-weight: 600; font-size: 1.1rem;">Level: ${e.level}/10</span>
+                            </div>
+                            ${e.note ? `<div style="font-size: 0.9rem; color: var(--secondary); margin-top: 0.5rem;">${e.note}</div>` : ''}
+                        </div>
+                        <div>
+                            <button onclick="editAgitationLog('${selectedAgitationDate}', ${index}, '${e.time}', ${e.level}, '${(e.note || '').replace(/'/g, "\\'")}')" 
+                                    style="background: var(--primary); color: white; border: none; padding: 0.5rem 0.75rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; margin-right: 0.5rem;">
+                                Edit
+                            </button>
+                            <button onclick="deleteAgitationLogByDate('${selectedAgitationDate}', ${index})" 
+                                    style="background: var(--danger); color: white; border: none; padding: 0.5rem 0.75rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        function editAgitationLog(date, index, oldTime, oldLevel, oldNote) {
+            const newLevel = prompt(`Edit agitation level (0-10):`, oldLevel);
+            if (newLevel !== null && newLevel >= 0 && newLevel <= 10) {
+                const newNote = prompt('Edit note (optional):', oldNote);
+                const entry = healthData.find(e => e.date === date);
+                if (entry && entry.agitation && entry.agitation[index]) {
+                    entry.agitation[index].level = parseInt(newLevel);
+                    entry.agitation[index].note = newNote || '';
+                    saveAgitationToFirebase(entry);
+                    loadAgitationLogsForDate();
+                    loadAgitationHistory();
+                }
+            }
+        }
+        
+        function deleteAgitationLogByDate(date, index) {
+            if (confirm('Delete this agitation log?')) {
+                const entry = healthData.find(e => e.date === date);
+                if (entry && entry.agitation) {
+                    entry.agitation.splice(index, 1);
+                    saveAgitationToFirebase(entry);
+                    loadAgitationLogsForDate();
+                    loadAgitationHistory();
+                }
+            }
+        }
+        
+        function loadAgitationHistory() {
+            const container = document.getElementById('agitationHistoryView');
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Time</th><th>Level</th><th>Note</th><th>Actions</th></tr></thead><tbody>';
+            
+            // Flatten all agitation logs with their dates
+            const allLogs = [];
+            healthData.forEach(entry => {
+                if (entry.agitation && entry.agitation.length > 0) {
+                    entry.agitation.forEach((log, index) => {
+                        allLogs.push({
+                            date: entry.date,
+                            index: index,
+                            time: log.time,
+                            level: log.level,
+                            note: log.note || ''
+                        });
+                    });
+                }
+            });
+            
+            // Sort by date (newest first)
+            allLogs.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            // Build table rows
+            allLogs.forEach(log => {
+                html += `<tr>
+                    <td>${log.date}</td>
+                    <td>${log.time}</td>
+                    <td style="font-weight: 600; color: #f59e0b;">${log.level}/10</td>
+                    <td>${log.note}</td>
+                    <td>
+                        <button onclick="editAgitationLog('${log.date}', ${log.index}, '${log.time}', ${log.level}, '${log.note.replace(/'/g, "\\'")}')" 
+                                style="padding: 0.25rem 0.75rem; background: var(--primary); color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 0.875rem; margin-right: 0.25rem;">
+                            Edit
+                        </button>
+                        <button onclick="deleteAgitationLog('${log.date}', ${log.index})" 
+                                style="padding: 0.25rem 0.75rem; background: var(--danger); color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 0.875rem;">
+                            Delete
+                        </button>
+                    </td>
+                </tr>`;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html || '<p style="text-align: center; color: var(--secondary); padding: 2rem;">No agitation logs yet</p>';
+                }
+        
+        // View switching
+        function showView(viewName) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-tabs button').forEach(b => b.classList.remove('active'));
+            
+            const targetView = document.getElementById(viewName + 'View');
+            if (targetView) {
+                targetView.classList.add('active');
+            }
+            
+            // Find and activate the corresponding nav button
+            const navButtons = document.querySelectorAll('.nav-tabs button');
+            navButtons.forEach(button => {
+                if (button.textContent.toLowerCase().includes(viewName) || 
+                    (viewName === 'daily' && button.textContent.includes('Daily Entry'))) {
+                    button.classList.add('active');
+                }
+            });
+
+            switch(viewName) {
+                case 'meds': loadMedsHistory(); break;
+                case 'diet': loadDietHistory(); break;
+                case 'exercise': loadExerciseHistory(); break;
+                case 'weights': initWorkoutsCollection(); loadTodaysWorkouts();   break;
+                case 'ailments': loadAilmentsHistory(); break;
+                case 'energy': 
+                    const energyPicker = document.getElementById('energyDatePicker');
+                    if (energyPicker) {
+                        energyPicker.value = selectedEnergyDate;
+                    }
+                    loadEnergyLogsForDate();
+                    loadEnergyHistory(); 
+                    break;
+                case 'agitation': 
+                    const agitationPicker = document.getElementById('agitationDatePicker');
+                    if (agitationPicker) {
+                        agitationPicker.value = selectedAgitationDate;
+                    }
+                    loadAgitationLogsForDate();
+                    loadAgitationHistory(); 
+                    break;
+                case 'notes': loadNotesHistory(); break;
+                case 'media': loadMediaHistory(); break;
+                case 'history': loadCompleteHistory(); break;
+            }
+        }
+
+        // History views
+        function loadMedsHistory() {
+            const container = document.getElementById('medsHistory');
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Concerta</th><th>Boost</th><th>Vitamin C</th><th>Omega-3</th><th>ZMA (ON)</th><th>NO2 (pure)</th><th>Probiotic</th><th>L/Z (NOW)</th><th>D3/K (pure)</th><th>Melatonin</th><th>M-Blue</th><th>Potassium</th><th>Creatine</th><th>Actions</th></tr></thead><tbody>';
+            healthData.forEach(entry => {
+                html += `<tr>
+                    <td>${entry.date}</td>
+                    <td>${entry.concerta ? '✓' : ''}</td>
+                    <td>${entry.boost ? '✓' : ''}</td>
+                    <td>${entry.vitaminC ? '✓' : ''}</td>
+                    <td>${entry.omega3 ? '✓' : ''}</td>
+                    <td>${entry.zma ? '✓' : ''}</td>
+                    <td>${entry.no2 ? '✓' : ''}</td>
+                    <td>${entry.probiotic ? '✓' : ''}</td>
+                    <td>${entry.lz ? '✓' : ''}</td>
+                    <td>${entry.d3k ? '✓' : ''}</td>
+                    <td>${entry.melatonin ? '✓' : ''}</td>
+                    <td>${entry.mblue ? '✓' : ''}</td>
+                    <td>${entry.potassium ? '✓' : ''}</td>
+                    <td>${entry.creatine ? '✓' : ''}</td>
+                    <td><button onclick="editEntry('${entry.date}')" style="padding: 0.25rem 0.75rem; background: #4285f4; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 0.875rem;">Edit</button></td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function loadDietHistory() {
+            const container = document.getElementById('dietHistory');
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Weight</th><th>Diet</th><th>Water</th><th>Protein</th><th>Carbs</th><th>Fasting</th><th>Actions</th></tr></thead><tbody>';
+            healthData.forEach(entry => {
+                html += `<tr><td>${entry.date}</td><td>${entry.weight || '-'}</td><td>${entry.diet || '-'}</td><td>${entry.water || '-'}</td><td>${entry.protein || '-'}</td><td>${entry.carbs || '-'}</td><td>${entry.fasting || '-'}</td><td><button onclick="editEntry('${entry.date}')" style="padding: 0.25rem 0.75rem; background: #4285f4; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 0.875rem;">Edit</button></td></tr>`;
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function loadExerciseHistory() {
+            const container = document.getElementById('exerciseHistory');
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Exercise Type</th><th>Duration (min)</th><th>Routine</th><th>Stretch</th><th>Meditate</th><th>Actions</th></tr></thead><tbody>';
+            healthData.forEach(entry => {
+                const currentValue = entry.exercise || '';
+                const exerciseOptions = [
+                    {value: '', label: 'Select...'},
+                    {value: 'bike', label: '🚴 Bike'},
+                    {value: 'hike', label: '🥾 Hike'},
+                    {value: 'ruck', label: '🎒 Ruck'},
+                    {value: 'run', label: '🏃 Run'},
+                    {value: 'sauna', label: '🧖 Sauna'},
+                    {value: 'sprints', label: '⚡ Sprints'},
+                    {value: 'weights', label: '🏋️ Weights'},
+                    {value: 'walk', label: '🚶 Walk'},
+                    {value: 'yoga', label: '🧘 Yoga'}
+                ];
+                
+                let selectHtml = `<select onchange="updateExerciseType('${entry.date}', this.value)" style="padding: 0.5rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.875rem; cursor: pointer; min-width: 120px;">`;
+                exerciseOptions.forEach(opt => {
+                    const selected = opt.value === currentValue ? 'selected' : '';
+                    selectHtml += `<option value="${opt.value}" ${selected}>${opt.label}</option>`;
+                });
+                selectHtml += '</select>';
+                
+                html += `<tr>
+                    <td>${entry.date}</td>
+                    <td>${selectHtml}</td>
+                    <td>${entry.duration || '-'}</td>
+                    <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${entry.routine || '-'}</td>
+                    <td>${entry.stretch ? '✓' : ''}</td>
+                    <td>${entry.meditate ? '✓' : ''}</td>
+                    <td><button onclick="editEntry('${entry.date}')" style="padding: 0.25rem 0.75rem; background: #4285f4; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 0.875rem;">Edit</button></td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+        
+        // Update exercise type for a specific date
+        async function updateExerciseType(date, exerciseType) {
+            try {
+                updateSyncStatus('syncing', 'Updating...');
+                
+                // Find the entry for this date
+                const entry = healthData.find(e => e.date === date);
+                if (!entry || !entry.id) {
+                    alert('Entry not found');
+                    return;
+                }
+                
+                // Update in Firebase
+                await healthCollection.doc(entry.id).update({
+                    exercise: exerciseType
+                });
+                
+                // Update local data
+                entry.exercise = exerciseType;
+                
+                updateSyncStatus('', 'Synced');
+                console.log(`Updated ${date} exercise to: ${exerciseType}`);
+                
+            } catch (error) {
+                console.error('Error updating exercise type:', error);
+                updateSyncStatus('offline', 'Update error');
+                alert('Error updating exercise type: ' + error.message);
+            }
+        }
+
+        function loadAilmentsHistory() {
+            const container = document.getElementById('ailmentsHistory');
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Headache</th><th>Lightheaded</th><th>Agitated</th><th>Depressed</th><th>Stomach</th><th>Sinuses</th><th>Actions</th></tr></thead><tbody>';
+            healthData.forEach(entry => {
+                html += `<tr><td>${entry.date}</td><td>${entry.headache || 0}/10</td><td>${entry.lightheaded || 0}/10</td><td>${entry.agitated || 0}/10</td><td>${entry.depressed || 0}/10</td><td>${entry.stomach || 0}/10</td><td>${entry.sinuses || 0}/10</td><td><button onclick="editEntry('${entry.date}')" style="padding: 0.25rem 0.75rem; background: #4285f4; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 0.875rem;">Edit</button></td></tr>`;
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function loadEnergyHistory() {
+            const container = document.getElementById('energyHistoryView');
+            let html = '';
+            healthData.forEach(entry => {
+                if (entry.energy && entry.energy.length > 0) {
+                    const displayDate = new Date(entry.date + 'T00:00:00').toLocaleDateString('en-US', { 
+                        weekday: 'short', 
+                        month: 'short', 
+                        day: 'numeric', 
+                        year: 'numeric' 
+                    });
+                    html += `<div style="margin-bottom: 2rem; padding: 1rem; background: var(--surface); border-radius: 2px;">
+                        <h3 style="margin-bottom: 1rem;">${displayDate}</h3>`;
+                    entry.energy.forEach(e => {
+                        html += `<div style="display: flex; justify-content: space-between; padding: 0.5rem; background: white; border-radius: 6px; margin-bottom: 0.5rem;"><span>${e.time}</span><span style="font-weight: 600; color: var(--primary);">Energy: ${e.level}/10</span></div>`;
+                    });
+                    html += `</div>`;
+                }
+            });
+            container.innerHTML = html || '<p style="text-align: center; color: var(--secondary); padding: 2rem;">No energy logs yet</p>';
+        }
+
+
+        function loadNotesHistory() {
+            const container = document.getElementById('notesHistory');
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Notes</th><th>Actions</th></tr></thead><tbody>';
+            healthData.forEach(entry => {
+                if (entry.notes) {
+                    html += `<tr><td>${entry.date}</td><td>${entry.notes}</td><td><button onclick="editEntry('${entry.date}')" style="padding: 0.25rem 0.75rem; background: #4285f4; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 0.875rem;">Edit</button></td></tr>`;
+                }
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function loadMediaHistory() {
+            const container = document.getElementById('mediaHistory');
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Apple TV+</th><th>Netflix</th><th>Paramount</th><th>Amazon</th><th>YouTube</th><th>YouTube TV</th><th>Actions</th></tr></thead><tbody>';
+            healthData.forEach(entry => {
+                html += `<tr><td>${entry.date}</td><td>${entry.appleTv || '-'}</td><td>${entry.netflix || '-'}</td><td>${entry.paramount || '-'}</td><td>${entry.amazon || '-'}</td><td>${entry.youtube || '-'}</td><td>${entry.youtubeTv || '-'}</td><td><button onclick="editEntry('${entry.date}')" style="padding: 0.25rem 0.75rem; background: #4285f4; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 0.875rem;">Edit</button></td></tr>`;
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function loadCompleteHistory() {
+            const container = document.getElementById('completeHistory');
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Weight</th><th>Exercise</th><th>Fasting</th><th>Notes</th></tr></thead><tbody>';
+            healthData.forEach(entry => {
+                html += `<tr onclick="loadDate('${entry.date}')" style="cursor: pointer;"><td>${entry.date}</td><td>${entry.weight || '-'}</td><td>${entry.exercise || '-'}</td><td>${entry.fasting || '-'}</td><td>${entry.notes ? entry.notes.substring(0, 50) + '...' : '-'}</td></tr>`;
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        
+        // Edit entry - load specific date
+        
+
+
+        // Edit entry from history view
+        function editEntry(date) {
+            console.log('Editing entry for:', date);
+            
+            // Set current date and load the data
+            currentDate = date;
+            
+            // Update date picker
+            const picker = document.getElementById('datePicker');
+            if (picker) {
+                picker.value = date;
+            }
+            
+            // Load the entry data
+            loadDate(date);
+            
+            // Switch to Daily Entry tab
+            showView('daily');
+        }
+        
+        
+        function changeDate() {
+            const picker = document.getElementById('datePicker');
+            if (picker && picker.value) {
+                console.log('📅 Date picker changed to:', picker.value);
+                console.log('   Old currentDate:', currentDate);
+                currentDate = picker.value;
+                console.log('   New currentDate:', currentDate);
+                loadDate(currentDate);
+            }
+        }
+
+        
+
+        function loadDate(date) {
+            console.log('=== LOADING DATE ===');
+            console.log('Loading date:', date);
+            console.log('healthData array has', healthData.length, 'entries');
+            
+            // Update date picker
+            const picker = document.getElementById('datePicker');
+            if (picker) {
+                picker.value = date;
+            }
+            
+            // Set current date
+            currentDate = date;
+            
+            // Load the data for this date
+            const entry = healthData.find(e => e.date === date);
+            
+            if (entry) {
+                console.log('✓ Entry found for', date);
+                console.log('Media values in entry:', {
+                    appleTv: entry.appleTv,
+                    netflix: entry.netflix,
+                    paramount: entry.paramount,
+                    amazon: entry.amazon,
+                    youtube: entry.youtube,
+                    youtubeTv: entry.youtubeTv
+                });
+                
+                // Populate all fields from entry
+                // Medications
+                document.getElementById('concerta').checked = entry.concerta || false;
+                document.getElementById('boost').checked = entry.boost || false;
+                document.getElementById('vitaminC').checked = entry.vitaminC || false;
+                document.getElementById('omega3').checked = entry.omega3 || false;
+                document.getElementById('zma').checked = entry.zma || false;
+                document.getElementById('no2').checked = entry.no2 || false;
+                document.getElementById('probiotic').checked = entry.probiotic || false;
+                document.getElementById('lz').checked = entry.lz || false;
+                document.getElementById('d3k').checked = entry.d3k || false;
+                document.getElementById('melatonin').checked = entry.melatonin || false;
+                document.getElementById('mblue').checked = entry.mblue || false;
+                document.getElementById('potassium').checked = entry.potassium || false;
+                document.getElementById('creatine').checked = entry.creatine || false;
+                
+                // Diet
+                document.getElementById('weight').value = entry.weight || '';
+                document.getElementById('diet').value = entry.diet || '';
+                document.getElementById('startEating').value = entry.startEating || '';
+                document.getElementById('endEating').value = entry.endEating || '';
+                calculateFasting(); // Calculate after loading times
+                document.getElementById('water').value = entry.water || 0;
+                document.getElementById('protein').value = entry.protein || 0;
+                document.getElementById('carbs').checked = entry.carbs || false;
+                document.getElementById('alcohol').value = entry.alcohol || 0;
+                document.getElementById('nicotine').value = entry.nicotine || 0;
+                if (document.getElementById('nicotineDisplay')) {
+                    document.getElementById('nicotineDisplay').textContent = entry.nicotine || 0;
+                }
+                document.getElementById('cheatMeal').checked = entry.cheatMeal || false;
+                document.getElementById('cheatDessert').checked = entry.cheatDessert || false;
+                document.getElementById('body').value = entry.body || '';
+                
+                // Exercise
+                document.getElementById('routine').value = entry.routine || '';
+                document.getElementById('exercise').value = entry.exercise || '';
+                document.getElementById('duration').value = entry.duration || '';
+                document.getElementById('stretch').checked = entry.stretch || false;
+                document.getElementById('meditate').checked = entry.meditate || false;
+                
+                // Ailments
+                document.getElementById('headache').value = entry.headache || 0;
+                document.getElementById('lightheaded').value = entry.lightheaded || 0;
+                // document.getElementById('agitated').value = entry.agitated || 0; // Field removed
+                document.getElementById('depressed').value = entry.depressed || 0;
+                document.getElementById('stomach').value = entry.stomach || 0;
+                document.getElementById('sinuses').value = entry.sinuses || 0;
+                
+                // Notes
+                document.getElementById('notes').value = entry.notes || '';
+                
+                // Media
+                document.getElementById('appleTv').value = entry.appleTv || 0;
+                // Display removed - using number input now
+                document.getElementById('netflix').value = entry.netflix || 0;
+                
+                document.getElementById('paramount').value = entry.paramount || 0;
+                
+                document.getElementById('amazon').value = entry.amazon || 0;
+                
+                document.getElementById('youtube').value = entry.youtube || 0;
+                
+                document.getElementById('youtubeTv').value = entry.youtubeTv || 0;
+                
+                
+                console.log('✅ Media values SET in DOM:',{
+                    appleTv: document.getElementById('appleTv').value,
+                    appleTvDisplay: document.getElementById('appleTvDisplay').textContent,
+                    netflix: document.getElementById('netflix').value,
+                    netflixDisplay: document.getElementById('netflixDisplay').textContent
+                });
+                
+                console.log('Entry loaded successfully');
+            } else {
+                console.log('❌ No entry found for', date, '- clearing form');
+                // Clear the form
+                document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                document.querySelectorAll('input[type="text"], input[type="number"], input[type="time"], textarea, select').forEach(input => input.value = '');
+                document.querySelectorAll('input[type="range"]').forEach(range => range.value = 0);
+                if (document.getElementById('waterDisplay')) document.getElementById('waterDisplay').textContent = '0 oz';
+                if (document.getElementById('proteinDisplay')) document.getElementById('proteinDisplay').textContent = '0 g';
+                if (document.getElementById('nicotineDisplay')) document.getElementById('nicotineDisplay').textContent = '0';
+            }
+        }
+
+
+        // Clear all data from Firebase
+        async function clearAllData() {
+            if (!confirm('⚠️ WARNING: This will delete ALL your health data from Firebase!\n\nAre you absolutely sure?')) {
+                return;
+            }
+            
+            if (!confirm('This cannot be undone! Have you exported your data?\n\nClick OK to permanently delete everything.')) {
+                return;
+            }
+            
+            try {
+                console.log('Starting to clear all data...');
+                const snapshot = await db.collection('health-entries').get();
+                console.log(`Found ${snapshot.size} entries to delete`);
+                
+                const batch = db.batch();
+                snapshot.docs.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+                
+                await batch.commit();
+                console.log('All data deleted from Firebase');
+                
+                healthData = [];
+                loadToday();
+                
+                alert('✅ All data cleared from Firebase! (' + snapshot.size + ' entries deleted)');
+            } catch (error) {
+                console.error('Error clearing data:', error);
+                alert('❌ Error clearing data: ' + error.message);
+            }
+        }
+
+        // CSV Import - Upload to Firebase
+        function importCSV() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.csv';
+            input.onchange = async function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const confirmImport = confirm(`Import CSV file "${file.name}"?\n\nThis will add all entries from the CSV to Firebase.\nExisting entries with the same date will be updated.`);
+                if (!confirmImport) return;
+                
+                updateSyncStatus('syncing', 'Importing CSV...');
+                
+                const reader = new FileReader();
+                reader.onload = async function(event) {
+                    try {
+                        const text = event.target.result;
+                        const lines = text.split('\n');
+                        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+                        
+                        let importCount = 0;
+                        let updateCount = 0;
+                        
+                        for (let i = 1; i < lines.length; i++) {
+                            if (!lines[i].trim()) continue;
+                            
+                            // Parse CSV line (handle quoted fields)
+                            const values = [];
+                            let currentValue = '';
+                            let insideQuotes = false;
+                            
+                            for (let char of lines[i]) {
+                                if (char === '"') {
+                                    insideQuotes = !insideQuotes;
+                                } else if (char === ',' && !insideQuotes) {
+                                    values.push(currentValue.trim());
+                                    currentValue = '';
+                                } else {
+                                    currentValue += char;
+                                }
+                            }
+                            values.push(currentValue.trim());
+                            
+                            if (values.length < 10) continue; // Skip malformed rows
+                            
+                            // Map values to entry object
+                            const entry = {
+                                date: values[0],
+                                concerta: values[1]?.toLowerCase() === 'true',
+                                effexor: values[2]?.toLowerCase() === 'true',
+                                c: values[3]?.toLowerCase() === 'true',
+                                omega3: values[4]?.toLowerCase() === 'true',
+                                zma: values[5]?.toLowerCase() === 'true',
+                                creatine: values[6]?.toLowerCase() === 'true',
+                                no2: values[7]?.toLowerCase() === 'true',
+                                probiotic: values[8]?.toLowerCase() === 'true',
+                                lz: values[9]?.toLowerCase() === 'true',
+                                d3k: values[10]?.toLowerCase() === 'true',
+                                melatonin: values[11]?.toLowerCase() === 'true',
+                                mblue: values[12]?.toLowerCase() === 'true',
+                                potassium: values[13]?.toLowerCase() === 'true',
+                                boost: values[14]?.toLowerCase() === 'true',
+                                multi: values[15]?.toLowerCase() === 'true',
+                                bcaa: values[16]?.toLowerCase() === 'true',
+                                adrenal: values[17]?.toLowerCase() === 'true',
+                                msm: values[18]?.toLowerCase() === 'true',
+                                weight: values[19] || '',
+                                diet: values[20] || '',
+                                startEating: values[21] || '',
+                                endEating: values[22] || '',
+                                fasting: values[23] || '',
+                                fast: values[24]?.toLowerCase() === 'true',
+                                water: values[25] || '',
+                                protein: values[26] || '',
+                                carbs: values[27] || '',
+                                alcohol: values[28] || '0',
+                                cheatMeal: values[29]?.toLowerCase() === 'true',
+                                cheatDessert: values[30]?.toLowerCase() === 'true',
+                                body: values[31]?.replace(/^"|"$/g, '') || '',
+                                routine: values[32]?.replace(/^"|"$/g, '') || '',
+                                exercise: values[33] || '',
+                                duration: values[34] || '',
+                                stretch: values[35]?.toLowerCase() === 'true',
+                                meditate: values[36]?.toLowerCase() === 'true',
+                                headache: values[37] || '0',
+                                lightheaded: values[38] || '0',
+                                agitated: values[39] || '0',
+                                depressed: values[40] || '0',
+                                stomach: values[41] || '0',
+                                sinuses: values[42] || '0',
+                                notes: values[43]?.replace(/^"|"$/g, '') || '',
+                                appleTv: values[44] || '',
+                                netflix: values[45] || '',
+                                paramount: values[46] || '',
+                                amazon: values[47] || '',
+                                youtube: values[48] || '',
+                                youtubeTv: values[49] || '',
+                                nicotine: values[50] || '',
+                                energy: [],
+                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                            };
+                            
+                            // Check if entry exists for this date
+                            const existingEntry = healthData.find(e => e.date === entry.date);
+                            
+                            if (existingEntry && existingEntry.id) {
+                                // Update existing
+                                await healthCollection.doc(existingEntry.id).update(entry);
+                                updateCount++;
+                            } else {
+                                // Create new
+                                await healthCollection.add(entry);
+                                importCount++;
+                            }
+                            
+                            // Update progress
+                            updateSyncStatus('syncing', `Importing... ${importCount + updateCount}/${lines.length - 1}`);
+                        }
+                        
+                        updateSyncStatus('', 'Synced');
+                        alert(`Import complete!\n\nNew entries: ${importCount}\nUpdated entries: ${updateCount}\nTotal: ${importCount + updateCount}`);
+                        
+                        // Reload data
+                        await loadDataFromFirebase();
+                        loadToday();
+                        
+                    } catch (error) {
+                        console.error('Import error:', error);
+                        updateSyncStatus('offline', 'Import failed');
+                        alert('Error importing CSV: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        // CSV Export
+        function downloadCSV() {
+            let csv = 'Date,Concerta,Effexor,C,Omega-3,ZMA,Creatine,NO2,Probiotic,L/Z,D3/K,Melatonin,M-Blue,Potassium,Boost,Multi,BCAA,Adrenal,MSM,Weight,Diet,Start eating,End eating,Fasting,Fast,Water,Protein,Carbs,Alcohol,Cheat meal,Cheat dessert,Body,Routine,Exercise,Duration,Stretch,Meditate,Headache,Lightheaded,Agitated,Depressed,Stomach,Sinuses,Notes,Apple TV+,Netflix,Paramount,Amazon,YT,YT TV,Nicotine\n';
+            
+            healthData.forEach(entry => {
+                const row = [
+                    entry.date,
+                    entry.concerta ? 'TRUE' : 'FALSE',
+                    entry.effexor ? 'TRUE' : 'FALSE',
+                    entry.c ? 'TRUE' : 'FALSE',
+                    entry.omega3 ? 'TRUE' : 'FALSE',
+                    entry.zma ? 'TRUE' : 'FALSE',
+                    entry.creatine ? 'TRUE' : 'FALSE',
+                    entry.no2 ? 'TRUE' : 'FALSE',
+                    entry.probiotic ? 'TRUE' : 'FALSE',
+                    entry.lz ? 'TRUE' : 'FALSE',
+                    entry.d3k ? 'TRUE' : 'FALSE',
+                    entry.melatonin ? 'TRUE' : 'FALSE',
+                    entry.mblue ? 'TRUE' : 'FALSE',
+                    entry.potassium ? 'TRUE' : 'FALSE',
+                    entry.boost ? 'TRUE' : 'FALSE',
+                    entry.multi ? 'TRUE' : 'FALSE',
+                    entry.bcaa ? 'TRUE' : 'FALSE',
+                    entry.adrenal ? 'TRUE' : 'FALSE',
+                    entry.msm ? 'TRUE' : 'FALSE',
+                    entry.weight || '',
+                    entry.diet || '',
+                    entry.startEating || '',
+                    entry.endEating || '',
+                    entry.fasting || '',
+                    entry.fast ? 'TRUE' : 'FALSE',
+                    entry.water || '',
+                    entry.protein || '',
+                    entry.carbs || '',
+                    entry.alcohol || '',
+                    entry.cheatMeal ? 'TRUE' : 'FALSE',
+                    entry.cheatDessert ? 'TRUE' : 'FALSE',
+                    `"${(entry.body || '').replace(/"/g, '""')}"`,
+                    `"${(entry.routine || '').replace(/"/g, '""')}"`,
+                    entry.exercise || '',
+                    entry.duration || '',
+                    entry.stretch ? 'TRUE' : 'FALSE',
+                    entry.meditate ? 'TRUE' : 'FALSE',
+                    entry.headache || 0,
+                    entry.lightheaded || 0,
+                    entry.agitated || 0,
+                    entry.depressed || 0,
+                    entry.stomach || 0,
+                    entry.sinuses || 0,
+                    `"${(entry.notes || '').replace(/"/g, '""')}"`,
+                    entry.appleTv || '',
+                    entry.netflix || '',
+                    entry.paramount || '',
+                    entry.amazon || '',
+                    entry.youtube || '',
+                    entry.youtubeTv || '',
+                    entry.nicotine || ''
+                ];
+                csv += row.join(',') + '\n';
+            });
+
+            const blob = new Blob([csv], {type: 'text/csv'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `health-data-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // ============================================
+        // WEIGHTS TRACKING FUNCTIONALITY
+        // ============================================
+
+        let workoutsCollection = null;
+        let allWorkouts = [];
+
+        function initWorkoutsCollection() {
+            if (!workoutsCollection) {
+                workoutsCollection = db.collection('workouts');
+                loadWorkoutsFromFirebase();
+                
+                // Set weights date picker to current date
+                const weightsPicker = document.getElementById('weightsDatePicker');
+                if (weightsPicker) {
+                    weightsPicker.value = selectedWeightsDate;
+                }
+            }
+        }
+
+        async function loadWorkoutsFromFirebase() {
+            try {
+                const snapshot = await workoutsCollection.orderBy('date', 'desc').get();
+                allWorkouts = [];
+                
+                snapshot.forEach(doc => {
+                    allWorkouts.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                
+                console.log(`Loaded ${allWorkouts.length} workouts`);
+            } catch (error) {
+                console.error('Error loading workouts:', error);
+            }
+        }
+
+        function showExerciseAutocomplete(query) {
+            const autocompleteDiv = document.getElementById('exerciseAutocomplete');
+            
+            if (!query || query.length < 2) {
+                autocompleteDiv.style.display = 'none';
+                return;
+            }
+            
+            const matchingExercises = getMatchingExercises(query);
+            
+            if (matchingExercises.length === 0) {
+                autocompleteDiv.style.display = 'none';
+                return;
+            }
+            
+            let html = '';
+            matchingExercises.forEach(exercise => {
+                const lastWorkout = exercise.lastWorkout;
+                const dateStr = new Date(lastWorkout.date).toLocaleDateString();
+                const escapedName = exercise.name.replace(/'/g, "\\'");
+                
+                html += `
+                    <div style="padding: 1rem; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.2s;"
+                         onmouseover="this.style.background='var(--surface)'"
+                         onmouseout="this.style.background='white'"
+                         onclick="selectExercise('${escapedName}', ${lastWorkout.sets}, ${lastWorkout.reps}, ${lastWorkout.weight})">
+                        <div style="font-weight: 600; margin-bottom: 0.25rem;">${exercise.name}</div>
+                        <div style="font-size: 0.875rem; color: var(--secondary);">
+                            Last: ${lastWorkout.sets} sets × ${lastWorkout.reps} reps @ ${lastWorkout.weight} lbs
+                            <span style="opacity: 0.7;">(${dateStr})</span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            autocompleteDiv.innerHTML = html;
+            autocompleteDiv.style.display = 'block';
+        }
+
+        function hideExerciseAutocomplete() {
+            document.getElementById('exerciseAutocomplete').style.display = 'none';
+        }
+
+        function getMatchingExercises(query) {
+            const lowerQuery = query.toLowerCase();
+            const exerciseMap = {};
+            
+            allWorkouts.forEach(workout => {
+                const exerciseName = workout.exercise.toLowerCase();
+                if (exerciseName.includes(lowerQuery)) {
+                    if (!exerciseMap[exerciseName] || new Date(workout.date) > new Date(exerciseMap[exerciseName].date)) {
+                        exerciseMap[exerciseName] = {
+                            name: workout.exercise,
+                            lastWorkout: {
+                                date: workout.date,
+                                sets: workout.sets,
+                                reps: workout.reps,
+                                weight: workout.weight
+                            }
+                        };
+                    }
+                }
+            });
+            
+            return Object.values(exerciseMap).sort((a, b) => a.name.localeCompare(b.name));
+        }
+
+        function selectExercise(name, sets, reps, weight) {
+            document.getElementById('exerciseName').value = name;
+            document.getElementById('sets').value = sets;
+            document.getElementById('reps').value = reps;
+            document.getElementById('weightAmount').value = weight;
+            hideExerciseAutocomplete();
+        }
+
+        async function addWorkout() { return addWorkoutOriginal(); } async function addWorkoutOriginal() {
+            const workoutName = document.getElementById('workoutName').value.trim();
+            const exercise = document.getElementById('exerciseName').value.trim();
+            const sets = parseInt(document.getElementById('sets').value);
+            const reps = parseInt(document.getElementById('reps').value);
+            const weight = parseFloat(document.getElementById('weightAmount').value);
+            
+            const notes = document.getElementById('workoutNotes').value.trim();
+            
+            if (!exercise) {
+                alert('Please enter an exercise name');
+                return;
+            }
+            
+            if (!sets || !reps) {
+                alert('Please enter sets and reps');
+                return;
+            }
+            
+            try {
+                updateSyncStatus('syncing', 'Saving workout...');
+                
+                const workout = {
+                    date: selectedWeightsDate,
+                    workoutName: workoutName,
+                    exercise: exercise,
+                    sets: sets,
+                    reps: reps,
+                    weight: weight || 0,
+                    
+                    notes: notes,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                
+                await workoutsCollection.add(workout);
+                await loadWorkoutsFromFirebase();
+                
+                document.getElementById('exerciseName').value = '';
+                document.getElementById('sets').value = '3';
+                document.getElementById('reps').value = '10';
+                document.getElementById('weightAmount').value = '0';
+                
+                document.getElementById('workoutNotes').value = '';
+                
+                loadTodaysWorkouts();
+                
+                
+                updateSyncStatus('', 'Synced');
+                
+            } catch (error) {
+                console.error('Error adding workout:', error);
+                updateSyncStatus('offline', 'Save error');
+                alert('Error saving workout: ' + error.message);
+            }
+        }
+
+        let selectedWeightsDate = getLocalDateString();
+        
+        function loadTodaysWorkouts() {
+            const todaysWorkouts = allWorkouts.filter(w => w.date === selectedWeightsDate);
+            
+            // Sort by timestamp (most recent first)
+            todaysWorkouts.sort((a, b) => {
+                if (a.timestamp && b.timestamp) {
+                    return b.timestamp.seconds - a.timestamp.seconds;
+                }
+                return 0;
+            });
+            
+            const container = document.getElementById('todaysWorkoutsList');
+            
+            console.log('Loading workouts for date:', selectedWeightsDate);
+            console.log('Found workouts:', todaysWorkouts.length);
+            console.log('Total workouts in DB:', allWorkouts.length);
+            
+            // Update date display
+            const dateDisplay = document.getElementById('selectedDateDisplay');
+            if (dateDisplay) {
+                const displayDate = new Date(selectedWeightsDate + 'T00:00:00');
+                dateDisplay.textContent = displayDate.toLocaleDateString('en-US', { 
+                    weekday: 'short', 
+                    month: 'short', 
+                    day: 'numeric', 
+                    year: 'numeric' 
+                });
+            }
+            
+            if (todaysWorkouts.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 2rem;">
+                        <p style="color: var(--secondary); margin-bottom: 1rem; font-size: 1.1rem;">No workouts logged for this date</p>
+                        <p style="color: var(--secondary); font-size: 0.9rem;">Use the form above to add your first workout</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            todaysWorkouts.forEach(workout => {
+                const time = workout.timestamp ? new Date(workout.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+                
+                html += `
+                    <div class="weights-exercise">
+                        <div class="weights-exercise-content">
+                            <div class="weights-exercise-info">
+                                <div class="weights-exercise-name">${workout.exercise}</div>
+                                <div class="weights-exercise-details">${workout.sets} sets × ${workout.reps} reps @ ${workout.weight} lbs</div>
+                                ${workout.notes ? `<div class="weights-exercise-notes">${workout.notes}</div>` : ''}
+                            </div>
+                            <div class="weights-exercise-actions">
+                                <button onclick="editWorkout('${workout.id}', '${(workout.workoutName || '').replace(/'/g, "\\'")}', '${workout.exercise.replace(/'/g, "\\'")}', ${workout.sets}, ${workout.reps}, ${workout.weight}, '${(workout.notes || '').replace(/'/g, "\\'")}', '${workout.date}')" 
+                                        class="weights-btn-edit">
+                                    Edit
+                                </button>
+                                <button onclick="deleteWorkout('${workout.id}')" 
+                                        class="weights-btn-delete">
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        async function deleteWorkout(workoutId) {
+            if (!confirm('Delete this workout?')) return;
+            
+            try {
+                await workoutsCollection.doc(workoutId).delete();
+                await loadWorkoutsFromFirebase();
+                loadTodaysWorkouts();
+                
+            } catch (error) {
+                console.error('Error deleting workout:', error);
+                alert('Error deleting workout: ' + error.message);
+            }
+        }
+
+        
+
+        
+        // Toggle session info visibility
+        function toggleSessionInfo() {
+            const section = document.getElementById('sessionInfoSection');
+            const icon = document.getElementById('sessionInfoToggleIcon');
+            
+            if (section.style.display === 'none') {
+                section.style.display = 'block';
+                icon.textContent = '▲';
+            } else {
+                section.style.display = 'none';
+                icon.textContent = '▼';
+            }
+        }
+        
+        // Update workout name display
+        function updateWorkoutNameDisplay() {
+            const name = document.getElementById('workoutName').value.trim();
+            const display = document.getElementById('currentWorkoutDisplay');
+            const nameElement = document.getElementById('currentWorkoutName');
+            
+            if (name) {
+                nameElement.textContent = name;
+                display.style.display = 'block';
+            } else {
+                display.style.display = 'none';
+            }
+        }
+        
+        function editCurrentWorkout() {
+            document.getElementById('workoutName').focus();
+            document.getElementById('workoutName').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        
+        // Change weights date picker
+        function changeWeightsDate() {
+            const picker = document.getElementById('weightsDatePicker');
+            if (picker && picker.value) {
+                selectedWeightsDate = picker.value;
+                loadTodaysWorkouts();
+                
+            }
+        }
+        
+        // Edit workout - populate form with existing data
+        let editingWorkoutId = null;
+        
+        function editWorkout(workoutId, workoutName, exercise, sets, reps, weight, notes, date) {
+            editingWorkoutId = workoutId;
+            
+            // Set the date picker to this workout's date
+            selectedWeightsDate = date;
+            const picker = document.getElementById('weightsDatePicker');
+            if (picker) {
+                picker.value = date;
+            }
+            
+            // Populate the form
+            document.getElementById('workoutName').value = workoutName || '';
+            document.getElementById('exerciseName').value = exercise;
+            document.getElementById('sets').value = sets;
+            document.getElementById('reps').value = reps;
+            document.getElementById('weightAmount').value = weight;
+            
+            document.getElementById('workoutNotes').value = notes;
+            
+            // Scroll to form
+            document.getElementById('exerciseName').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            document.getElementById('exerciseName').focus();
+            
+            // Change button text to indicate editing mode
+            const addButton = document.querySelector('button[onclick="addWorkout()"]');
+            if (addButton) {
+                addButton.textContent = '✏️ Update Workout';
+                addButton.style.background = '#f59e0b';
+            }
+        }
+        
+        // Modified addWorkout to handle both add and edit
+        async function addWorkoutOriginal() {
+            const workoutName = document.getElementById('workoutName').value.trim();
+            const exercise = document.getElementById('exerciseName').value.trim();
+            const sets = parseInt(document.getElementById('sets').value);
+            const reps = parseInt(document.getElementById('reps').value);
+            const weight = parseFloat(document.getElementById('weightAmount').value);
+            
+            const notes = document.getElementById('workoutNotes').value.trim();
+            
+            if (!exercise) {
+                alert('Please enter an exercise name');
+                return;
+            }
+            
+            if (!sets || !reps) {
+                alert('Please enter sets and reps');
+                return;
+            }
+            
+            try {
+                updateSyncStatus('syncing', editingWorkoutId ? 'Updating workout...' : 'Saving workout...');
+                
+                const workout = {
+                    date: selectedWeightsDate,
+                    workoutName: workoutName,
+                    exercise: exercise,
+                    sets: sets,
+                    reps: reps,
+                    weight: weight || 0,
+                    
+                    notes: notes,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                
+                if (editingWorkoutId) {
+                    // Update existing workout
+                    await workoutsCollection.doc(editingWorkoutId).update(workout);
+                    editingWorkoutId = null;
+                } else {
+                    // Add new workout
+                    await workoutsCollection.add(workout);
+                }
+                
+                await loadWorkoutsFromFirebase();
+                
+                // Clear form
+                document.getElementById('workoutName').value = '';
+                document.getElementById('exerciseName').value = '';
+                document.getElementById('sets').value = '3';
+                document.getElementById('reps').value = '10';
+                document.getElementById('weightAmount').value = '0';
+                
+                document.getElementById('workoutNotes').value = '';
+                
+                // Reset button text
+                const addButton = document.querySelector('button[onclick="addWorkout()"]');
+                if (addButton) {
+                    addButton.textContent = '➕ Add Workout';
+                    addButton.style.background = 'var(--primary)';
+                }
+                
+                loadTodaysWorkouts();
+                
+                
+                updateSyncStatus('', 'Synced');
+                
+            } catch (error) {
+                console.error('Error saving workout:', error);
+                updateSyncStatus('offline', 'Save error');
+        
+        
+        
+        
+        
+                alert('Error saving workout: ' + error.message);
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Ensure Firebase is initialized
+            if (typeof firebase === 'undefined' || !db) {
+                console.log('Waiting for Firebase to load...');
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                initFirebase();
+            }
+            
+            // Set date picker to today
+            const picker = document.getElementById('datePicker');
+            if (picker) {
+                picker.value = currentDate;
+            }
+            
+            // Load data from Firebase
+            await loadDataFromFirebase();
+            
+            console.log('🎬 Initial load complete, healthData has', healthData.length, 'entries');
+            console.log('🎬 About to call loadDate() for date:', currentDate);
+            
+            // Load today's entry
+            loadDate(currentDate);
+            
+            // Initialize workouts collection
+            initWorkoutsCollection();
+        });
+    </script>
+<script>document.getElementById("water").oninput = function() { document.getElementById("waterDisplay").textContent = this.value + " oz"; };</script><script>document.getElementById("protein").oninput = function() { document.getElementById("proteinDisplay").textContent = this.value + " g"; };</script>
+    
+    <!-- Back to Top Button -->
+    <button id="backToTop" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" title="Back to top">↑</button>
+    
+    <script>
+        // Show/hide back to top button
+        window.addEventListener('scroll', function() {
+            const button = document.getElementById('backToTop');
+            if (window.pageYOffset > 300) {
+                button.classList.add('visible');
+            } else {
+                button.classList.remove('visible');
+            }
+        });
+    </script>
+</body>
+</html>
