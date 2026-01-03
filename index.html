@@ -598,6 +598,7 @@
                 <button onclick="showView('settings')" style="padding: 0.75rem 1.25rem; background: var(--primary); color: white; border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">⚙️ Settings</button>
                 <button onclick="showView('energy')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">⚡ Energy</button>
                 <button onclick="showView('agitation')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😤 Agitation</button>
+                <button onclick="showView('anxiety')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😰 Anxiety</button>
                 <button onclick="showView('notes')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📝 Notes</button>
                 <button onclick="showView('history')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📋 History</button>
             </div>
@@ -639,7 +640,7 @@
 
 
         <!-- Navigation -->
-        <div class="nav-tabs">
+        <div class="nav-tabs" id="mainNavTabs">
             <button class="active" onclick="showView('daily')">📝 Daily Entry</button>
             <button onclick="showView('meds')">💊 Medications</button>
             <button onclick="showView('diet')">🍽️ Diet</button>
@@ -815,6 +816,7 @@
                         <select id="exercise">
                         <option value="">Select...</option>
                         <option value="bike">🚴 Bike</option>
+                        <option value="bodyweight">💪 Body Weight</option>
                         <option value="hike">🥾 Hike</option>
                         <option value="ruck">🎒 Ruck</option>
                         <option value="run">🏃 Run</option>
@@ -877,9 +879,11 @@
                 <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
                     <button onclick="logEnergy()">⚡ Log Current Energy</button>
                     <button onclick="logAgitation()" style="background: #f59e0b;">😤 Log Current Agitation</button>
+                    <button onclick="logAnxiety()" style="background: #8b5cf6;">😰 Log Current Anxiety</button>
                 </div>
                 <div id="energyLog" class="energy-log"></div>
                 <div id="agitationLog" class="energy-log" style="margin-top: 1rem;"></div>
+                <div id="anxietyLog" class="energy-log" style="margin-top: 1rem;"></div>
             </div>
 
             <div class="form-section">
@@ -977,21 +981,36 @@
                 </div>
             </div>
             
-            <!-- Current Workout Name Display -->
-            <div id="currentWorkoutDisplay" style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); color: white; padding: 1.5rem; border-radius: 2px; margin-bottom: 1.5rem; text-align: center; display: none;">
-                <h3 style="margin: 0 0 0.5rem 0; font-size: 1.5rem; font-weight: 700;" id="currentWorkoutName"></h3>
-                <button onclick="editCurrentWorkout()" style="padding: 0.5rem 1rem; background: white; color: var(--primary); border: none; border-radius: 2px; cursor: pointer; font-weight: 600; font-size: 0.875rem;">Edit Workout Name</button>
-            </div>
+            
             
             <div style="background: white; border-radius: 2px; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);">
-                <h3 style="margin-top: 0;">Add Workout</h3>
                 
+                <!-- Toggle for Session Info -->
                 <div style="margin-bottom: 1.5rem;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Workout Name (optional)</label>
-                    <input type="text" id="workoutName" placeholder="e.g., Push Day, FB-01-25, Leg Day..." 
-                           style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 2px; font-size: 1rem;"
-                           onblur="updateWorkoutNameDisplay()">
-                    <p style="font-size: 0.875rem; color: var(--secondary); margin-top: 0.5rem;">Group exercises under one workout session</p>
+                    <button onclick="toggleSessionInfo()" style="padding: 0.5rem 1rem; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 2px; cursor: pointer; font-weight: 600; font-size: 0.875rem;">
+                        <span id="sessionInfoToggleIcon">▼</span> Session Info (Name & Duration)
+                    </button>
+                </div>
+                
+                <!-- Collapsible Session Info -->
+                <div id="sessionInfoSection" style="display: none; margin-bottom: 1.5rem; padding: 1rem; background: var(--surface); border-radius: 2px;">
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Workout Name (optional)</label>
+                        <input type="text" id="workoutName" placeholder="e.g., Push Day, FB-01-25, Leg Day..." 
+                               style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 2px; font-size: 1rem;">
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Session Duration (min)</label>
+                        <input type="number" id="sessionDuration" min="0" step="1" placeholder="45" inputmode="numeric" 
+                               style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 2px; font-size: 1rem;">
+                    </div>
+                    
+                    <div style="margin-top: 1rem;">
+                        <button onclick="saveSessionInfo()" style="padding: 0.75rem 1.5rem; background: var(--primary); color: white; border: none; border-radius: 2px; cursor: pointer; font-weight: 600; width: 100%;">
+                            💾 Save Session Info
+                        </button>
+                    </div>
                 </div>
                 
                 <div style="position: relative; margin-bottom: 1.5rem;">
@@ -1018,10 +1037,6 @@
                         <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Weight (lbs)</label>
                         <input type="number" id="weightAmount" min="0" step="5" value="0" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 2px;">
                     </div>
-                    <div>
-                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Duration (min)</label>
-                        <input type="number" id="workoutDuration" min="0" step="1" placeholder="45" inputmode="numeric" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 2px; font-size: 1rem;">
-                    </div>
                 </div>
                 
                 <div style="margin-bottom: 1.5rem;">
@@ -1035,7 +1050,6 @@
             </div>
             
             <div id="todaysWorkouts" style="background: white; border-radius: 2px; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);">
-                <h3 style="margin-top: 0;">Workouts for <span id="selectedDateDisplay">Today</span></h3>
                 <div id="todaysWorkoutsList"></div>
             </div>
         </div>
@@ -1046,6 +1060,18 @@
         </div>
 
         <div id="energyView" class="view">
+            <button onclick="showView('settings')" class="secondary" style="margin-bottom: 1rem;">← Back to Settings</button>
+            
+            <!-- Sub-navigation for Settings sections -->
+            <div style="display: flex; gap: 0.5rem; margin: 1rem 0; padding: 0.5rem; background: white; border-radius: 2px; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); overflow-x: auto;">
+                <button onclick="showView('settings')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">⚙️ Settings</button>
+                <button onclick="showView('energy')" style="padding: 0.75rem 1.25rem; background: var(--primary); color: white; border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">⚡ Energy</button>
+                <button onclick="showView('agitation')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😤 Agitation</button>
+                <button onclick="showView('anxiety')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😰 Anxiety</button>
+                <button onclick="showView('notes')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📝 Notes</button>
+                <button onclick="showView('history')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📋 History</button>
+            </div>
+            
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
                 <div style="display: flex; align-items: center; gap: 1rem;">
                     <h2 style="margin: 0;">⚡ Energy Tracking for</h2>
@@ -1067,6 +1093,18 @@
 
         <!-- Agitation View -->
         <div id="agitationView" class="view">
+            <button onclick="showView('settings')" class="secondary" style="margin-bottom: 1rem;">← Back to Settings</button>
+            
+            <!-- Sub-navigation for Settings sections -->
+            <div style="display: flex; gap: 0.5rem; margin: 1rem 0; padding: 0.5rem; background: white; border-radius: 2px; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); overflow-x: auto;">
+                <button onclick="showView('settings')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">⚙️ Settings</button>
+                <button onclick="showView('energy')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">⚡ Energy</button>
+                <button onclick="showView('agitation')" style="padding: 0.75rem 1.25rem; background: var(--primary); color: white; border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😤 Agitation</button>
+                <button onclick="showView('anxiety')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😰 Anxiety</button>
+                <button onclick="showView('notes')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📝 Notes</button>
+                <button onclick="showView('history')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📋 History</button>
+            </div>
+            
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
                 <div style="display: flex; align-items: center; gap: 1rem;">
                     <h2 style="margin: 0;">😤 Agitation Tracking for</h2>
@@ -1086,7 +1124,52 @@
             </div>
         </div>
 
+        <!-- Anxiety View -->
+        <div id="anxietyView" class="view">
+            <button onclick="showView('settings')" class="secondary" style="margin-bottom: 1rem;">← Back to Settings</button>
+            
+            <!-- Sub-navigation for Settings sections -->
+            <div style="display: flex; gap: 0.5rem; margin: 1rem 0; padding: 0.5rem; background: white; border-radius: 2px; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); overflow-x: auto;">
+                <button onclick="showView('settings')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">⚙️ Settings</button>
+                <button onclick="showView('energy')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">⚡ Energy</button>
+                <button onclick="showView('agitation')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😤 Agitation</button>
+                <button onclick="showView('anxiety')" style="padding: 0.75rem 1.25rem; background: var(--primary); color: white; border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😰 Anxiety</button>
+                <button onclick="showView('notes')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📝 Notes</button>
+                <button onclick="showView('history')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📋 History</button>
+            </div>
+            
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <h2 style="margin: 0;">😰 Anxiety Tracking for</h2>
+                    <input type="date" id="anxietyDatePicker" onchange="changeAnxietyDate()" style="padding: 0.5rem; border: 2px solid #8b5cf6; border-radius: 2px; font-size: 1rem; cursor: pointer;">
+                </div>
+                <button onclick="logAnxietyForDate()" style="padding: 0.75rem 1.5rem; background: #8b5cf6; color: white; border: none; border-radius: 2px; font-weight: 600; cursor: pointer;">😰 Log Anxiety Now</button>
+            </div>
+            
+            <div style="background: white; border-radius: 2px; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);">
+                <h3 style="margin-top: 0;">Anxiety Logs for <span id="anxietyDateDisplay">Today</span></h3>
+                <div id="anxietyLogsForDate"></div>
+            </div>
+            
+            <div style="background: white; border-radius: 2px; padding: 2rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);">
+                <h3 style="margin-top: 0;">📊 All Anxiety History</h3>
+                <div id="anxietyHistoryView"></div>
+            </div>
+        </div>
+
                 <div id="notesView" class="view">
+            <button onclick="showView('settings')" class="secondary" style="margin-bottom: 1rem;">← Back to Settings</button>
+            
+            <!-- Sub-navigation for Settings sections -->
+            <div style="display: flex; gap: 0.5rem; margin: 1rem 0; padding: 0.5rem; background: white; border-radius: 2px; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); overflow-x: auto;">
+                <button onclick="showView('settings')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">⚙️ Settings</button>
+                <button onclick="showView('energy')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">⚡ Energy</button>
+                <button onclick="showView('agitation')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😤 Agitation</button>
+                <button onclick="showView('anxiety')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😰 Anxiety</button>
+                <button onclick="showView('notes')" style="padding: 0.75rem 1.25rem; background: var(--primary); color: white; border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📝 Notes</button>
+                <button onclick="showView('history')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📋 History</button>
+            </div>
+            
             <h2>📝 Notes History</h2>
             <div id="notesHistory"></div>
         </div>
@@ -1097,6 +1180,18 @@
         </div>
 
         <div id="historyView" class="view">
+            <button onclick="showView('settings')" class="secondary" style="margin-bottom: 1rem;">← Back to Settings</button>
+            
+            <!-- Sub-navigation for Settings sections -->
+            <div style="display: flex; gap: 0.5rem; margin: 1rem 0; padding: 0.5rem; background: white; border-radius: 2px; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); overflow-x: auto;">
+                <button onclick="showView('settings')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">⚙️ Settings</button>
+                <button onclick="showView('energy')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">⚡ Energy</button>
+                <button onclick="showView('agitation')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😤 Agitation</button>
+                <button onclick="showView('anxiety')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😰 Anxiety</button>
+                <button onclick="showView('notes')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📝 Notes</button>
+                <button onclick="showView('history')" style="padding: 0.75rem 1.25rem; background: var(--primary); color: white; border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📋 History</button>
+            </div>
+            
             <h2>📋 Complete History</h2>
             <button onclick="downloadCSV()" class="success" style="margin-bottom: 1rem;">⬇️ Download CSV</button>
             <div id="completeHistory"></div>
@@ -1254,6 +1349,10 @@
                     sinuses: document.getElementById('sinuses').value,
                     // Energy
                     energy: getCurrentEnergyLog(),
+                    // Agitation
+                    agitation: getCurrentAgitationLog(),
+                    // Anxiety
+                    anxiety: getCurrentAnxietyLog(),
                     // Notes
                     notes: document.getElementById('notes').value,
                     // Media
@@ -1381,6 +1480,7 @@
                 document.getElementById('lightheaded').value = entry.lightheaded || 0;
                 document.getElementById('lightheadedValue').textContent = entry.lightheaded || 0;
                 displayAgitationLog(entry.agitation || []);
+                displayAnxietyLog(entry.anxiety || []);
                 document.getElementById('depressed').value = entry.depressed || 0;
                 document.getElementById('depressedValue').textContent = entry.depressed || 0;
                 document.getElementById('stomach').value = entry.stomach || 0;
@@ -1426,6 +1526,8 @@
                 if (valueSpan) valueSpan.textContent = '0';
             });
             document.getElementById('energyLog').innerHTML = '';
+            document.getElementById('agitationLog').innerHTML = '';
+            document.getElementById('anxietyLog').innerHTML = '';
         }
 
         // Calculate fasting
@@ -1541,10 +1643,25 @@
             const level = prompt('Enter energy level (0-10):');
             if (level !== null && level >= 0 && level <= 10) {
                 const time = new Date().toLocaleTimeString();
-                const energyLog = getCurrentEnergyLog();
-                energyLog.push({ time, level: parseInt(level) });
-                displayEnergyLog(energyLog);
-                // Auto-save when energy is logged
+                
+                // Find or create entry
+                let entry = healthData.find(e => e.date === currentDate);
+                if (!entry) {
+                    // Create a minimal entry object to be filled in by saveEntry
+                    entry = { date: currentDate, energy: [] };
+                    healthData.push(entry);
+                }
+                
+                // Ensure energy array exists
+                if (!entry.energy) {
+                    entry.energy = [];
+                }
+                
+                // Add the log
+                entry.energy.push({ time, level: parseInt(level) });
+                
+                // Display and save
+                displayEnergyLog(entry.energy);
                 saveEntry();
             }
         }
@@ -1716,6 +1833,33 @@
             }
         }
         
+        // Agitation edit/delete functions
+        function editAgitationLog(date, index, oldTime, oldLevel, oldNote) {
+            const newLevel = prompt(`Edit agitation level (0-10):`, oldLevel);
+            if (newLevel !== null && newLevel >= 0 && newLevel <= 10) {
+                const newNote = prompt(`Edit note:`, oldNote);
+                const entry = healthData.find(e => e.date === date);
+                if (entry && entry.agitation && entry.agitation[index]) {
+                    entry.agitation[index].level = parseInt(newLevel);
+                    entry.agitation[index].note = newNote || '';
+                    saveAgitationToFirebase(entry);
+                    loadAgitationLogsForDate();
+                    loadAgitationHistory();
+                }
+            }
+        }
+        
+        function deleteAgitationLog(date, index) {
+            if (confirm('Delete this agitation log?')) {
+                const entry = healthData.find(e => e.date === date);
+                if (entry && entry.agitation) {
+                    entry.agitation.splice(index, 1);
+                    saveAgitationToFirebase(entry);
+                    loadAgitationLogsForDate();
+                    loadAgitationHistory();
+                }
+            }
+        }
 
         // Agitation tracking with date selection (includes notes)
         let selectedAgitationDate = getLocalDateString();
@@ -1733,9 +1877,25 @@
             if (level !== null && level >= 0 && level <= 10) {
                 const note = prompt('Add a note (optional):');
                 const time = new Date().toLocaleTimeString();
-                const agitationLog = getCurrentAgitationLog();
-                agitationLog.push({ time, level: parseInt(level), note: note || '' });
-                displayAgitationLog(agitationLog);
+                
+                // Find or create entry
+                let entry = healthData.find(e => e.date === currentDate);
+                if (!entry) {
+                    // Create a minimal entry object to be filled in by saveEntry
+                    entry = { date: currentDate, agitation: [] };
+                    healthData.push(entry);
+                }
+                
+                // Ensure agitation array exists
+                if (!entry.agitation) {
+                    entry.agitation = [];
+                }
+                
+                // Add the log
+                entry.agitation.push({ time, level: parseInt(level), note: note || '' });
+                
+                // Display and save
+                displayAgitationLog(entry.agitation);
                 saveEntry();
             }
         }
@@ -1746,7 +1906,15 @@
                 const note = prompt('Add a note (optional):');
                 const time = new Date().toLocaleTimeString();
                 
+                console.log('=== LOGGING AGITATION ===');
+                console.log('Date:', selectedAgitationDate);
+                console.log('Level:', level);
+                console.log('Note:', note);
+                console.log('Time:', time);
+                
                 let entry = healthData.find(e => e.date === selectedAgitationDate);
+                
+                console.log('Found entry:', entry);
                 
                 if (!entry) {
                     alert('No daily entry exists for this date. Please create a daily entry first, then log agitation.');
@@ -1759,6 +1927,9 @@
                 
                 entry.agitation.push({ time, level: parseInt(level), note: note || '' });
                 
+                console.log('Updated agitation array:', entry.agitation);
+                console.log('Entry ID:', entry.id);
+                
                 saveAgitationToFirebase(entry);
                 loadAgitationLogsForDate();
                 loadAgitationHistory();
@@ -1769,14 +1940,29 @@
             try {
                 updateSyncStatus('syncing', 'Saving agitation log...');
                 
-                if (entry.id) {
-                    await healthCollection.doc(entry.id).update({
-                        agitation: entry.agitation
-                    });
-                } else {
+                if (!entry.id) {
                     alert('Cannot save - entry not found in Firebase');
                     return;
                 }
+                
+                // Fetch the latest version of the document from Firebase
+                const docSnapshot = await healthCollection.doc(entry.id).get();
+                if (!docSnapshot.exists) {
+                    alert('Entry no longer exists in Firebase');
+                    return;
+                }
+                
+                // Get current agitation array from Firebase (in case it was updated elsewhere)
+                const currentData = docSnapshot.data();
+                const updatedAgitation = entry.agitation; // This has our new log entry
+                
+                // Update Firebase with the new agitation data
+                await healthCollection.doc(entry.id).update({
+                    agitation: updatedAgitation
+                });
+                
+                // Reload all data to ensure consistency
+                await loadDataFromFirebase();
                 
                 updateSyncStatus('', 'Synced');
                 
@@ -1902,45 +2088,359 @@
         
         function loadAgitationHistory() {
             const container = document.getElementById('agitationHistoryView');
-            let html = '';
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Time</th><th>Level</th><th>Note</th><th>Actions</th></tr></thead><tbody>';
+            
+            // Flatten all agitation logs with their dates
+            const allLogs = [];
             healthData.forEach(entry => {
                 if (entry.agitation && entry.agitation.length > 0) {
-                    const displayDate = new Date(entry.date + 'T00:00:00').toLocaleDateString('en-US', { 
-                        weekday: 'short', 
-                        month: 'short', 
-                        day: 'numeric', 
-                        year: 'numeric' 
+                    entry.agitation.forEach((log, index) => {
+                        allLogs.push({
+                            date: entry.date,
+                            index: index,
+                            time: log.time,
+                            level: log.level,
+                            note: log.note || ''
+                        });
                     });
-                    html += `<div style="margin-bottom: 2rem; padding: 1rem; background: var(--surface); border-radius: 2px;">
-                        <h3 style="margin-bottom: 1rem;">${displayDate}</h3>`;
-                    entry.agitation.forEach(e => {
-                        html += `<div style="padding: 0.5rem; background: white; border-radius: 6px; margin-bottom: 0.5rem;">
-                            <div style="display: flex; justify-content: space-between;">
-                                <span>${e.time}</span>
-                                <span style="font-weight: 600; color: #f59e0b;">Level: ${e.level}/10</span>
-                            </div>
-                            ${e.note ? `<div style="font-size: 0.85rem; color: var(--secondary); margin-top: 0.25rem;">${e.note}</div>` : ''}
-                        </div>`;
-                    });
-                    html += `</div>`;
                 }
             });
+            
+            // Sort by date (newest first)
+            allLogs.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            // Build table rows
+            allLogs.forEach(log => {
+                html += `<tr>
+                    <td>${log.date}</td>
+                    <td>${log.time}</td>
+                    <td style="font-weight: 600; color: #f59e0b;">${log.level}/10</td>
+                    <td>${log.note}</td>
+                    <td>
+                        <button onclick="editAgitationLog('${log.date}', ${log.index}, '${log.time}', ${log.level}, '${log.note.replace(/'/g, "\\'")}')" 
+                                style="padding: 0.25rem 0.75rem; background: var(--primary); color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 0.875rem; margin-right: 0.25rem;">
+                            Edit
+                        </button>
+                        <button onclick="deleteAgitationLog('${log.date}', ${log.index})" 
+                                style="padding: 0.25rem 0.75rem; background: var(--danger); color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 0.875rem;">
+                            Delete
+                        </button>
+                    </td>
+                </tr>`;
+            });
+            
+            html += '</tbody></table>';
             container.innerHTML = html || '<p style="text-align: center; color: var(--secondary); padding: 2rem;">No agitation logs yet</p>';
         }
+
+        // Anxiety tracking with date selection (includes notes)
+        let selectedAnxietyDate = getLocalDateString();
+        
+        function changeAnxietyDate() {
+            const picker = document.getElementById('anxietyDatePicker');
+            if (picker && picker.value) {
+                selectedAnxietyDate = picker.value;
+                loadAnxietyLogsForDate();
+            }
+        }
+        
+        function logAnxiety() {
+            const level = prompt('Enter anxiety level (0-10):');
+            if (level !== null && level >= 0 && level <= 10) {
+                const note = prompt('Add a note (optional):');
+                const time = new Date().toLocaleTimeString();
+                
+                // Find or create entry
+                let entry = healthData.find(e => e.date === currentDate);
+                if (!entry) {
+                    // Create a minimal entry object to be filled in by saveEntry
+                    entry = { date: currentDate, anxiety: [] };
+                    healthData.push(entry);
+                }
+                
+                // Ensure anxiety array exists
+                if (!entry.anxiety) {
+                    entry.anxiety = [];
+                }
+                
+                // Add the log
+                entry.anxiety.push({ time, level: parseInt(level), note: note || '' });
+                
+                // Display and save
+                displayAnxietyLog(entry.anxiety);
+                saveEntry();
+            }
+        }
+        
+        function logAnxietyForDate() {
+            const level = prompt('Enter anxiety level (0-10):');
+            if (level !== null && level >= 0 && level <= 10) {
+                const note = prompt('Add a note (optional):');
+                const time = new Date().toLocaleTimeString();
+                
+                console.log('=== LOGGING ANXIETY ===');
+                console.log('Date:', selectedAnxietyDate);
+                console.log('Level:', level);
+                console.log('Note:', note);
+                console.log('Time:', time);
+                
+                let entry = healthData.find(e => e.date === selectedAnxietyDate);
+                
+                console.log('Found entry:', entry);
+                
+                if (!entry) {
+                    alert('No daily entry exists for this date. Please create a daily entry first, then log anxiety.');
+                    return;
+                }
+                
+                if (!entry.anxiety) {
+                    entry.anxiety = [];
+                }
+                
+                entry.anxiety.push({ time, level: parseInt(level), note: note || '' });
+                
+                console.log('Updated anxiety array:', entry.anxiety);
+                console.log('Entry ID:', entry.id);
+                
+                saveAnxietyToFirebase(entry);
+                loadAnxietyLogsForDate();
+                loadAnxietyHistory();
+            }
+        }
+        
+        async function saveAnxietyToFirebase(entry) {
+            try {
+                updateSyncStatus('syncing', 'Saving anxiety log...');
+                
+                if (!entry.id) {
+                    alert('Cannot save - entry not found in Firebase');
+                    return;
+                }
+                
+                // Fetch the latest version of the document from Firebase
+                const docSnapshot = await healthCollection.doc(entry.id).get();
+                if (!docSnapshot.exists) {
+                    alert('Entry no longer exists in Firebase');
+                    return;
+                }
+                
+                // Get current anxiety array from Firebase (in case it was updated elsewhere)
+                const currentData = docSnapshot.data();
+                const updatedAnxiety = entry.anxiety; // This has our new log entry
+                
+                // Update Firebase with the new anxiety data
+                await healthCollection.doc(entry.id).update({
+                    anxiety: updatedAnxiety
+                });
+                
+                // Reload all data to ensure consistency
+                await loadDataFromFirebase();
+                
+                updateSyncStatus('', 'Synced');
+                
+            } catch (error) {
+                console.error('Error saving anxiety:', error);
+                updateSyncStatus('offline', 'Save error');
+                alert('Error saving anxiety: ' + error.message);
+            }
+        }
+        
+        function getCurrentAnxietyLog() {
+            const entry = healthData.find(e => e.date === currentDate);
+            return entry ? (entry.anxiety || []) : [];
+        }
+        
+        function displayAnxietyLog(log) {
+            const container = document.getElementById('anxietyLog');
+            container.innerHTML = '';
+            
+            if (log.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--secondary);">No anxiety logs yet today</p>';
+                return;
+            }
+
+            log.forEach((entry, index) => {
+                const div = document.createElement('div');
+                div.className = 'energy-entry';
+                div.innerHTML = `
+                    <div>
+                        <span>${entry.time}</span>
+                        <span style="margin-left: 1rem;">Level: ${entry.level}/10</span>
+                        ${entry.note ? `<div style="font-size: 0.85rem; color: var(--secondary); margin-top: 0.25rem;">${entry.note}</div>` : ''}
+                    </div>
+                    <button onclick="deleteAnxietyLog(${index})">Delete</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        function deleteAnxietyLog(index) {
+            const entry = healthData.find(e => e.date === currentDate);
+            if (entry && entry.anxiety) {
+                entry.anxiety.splice(index, 1);
+                displayAnxietyLog(entry.anxiety);
+                saveEntry();
+            }
+        }
+        
+        function loadAnxietyLogsForDate() {
+            const entry = healthData.find(e => e.date === selectedAnxietyDate);
+            const container = document.getElementById('anxietyLogsForDate');
+            
+            const dateDisplay = document.getElementById('anxietyDateDisplay');
+            if (dateDisplay) {
+                const displayDate = new Date(selectedAnxietyDate + 'T00:00:00');
+                dateDisplay.textContent = displayDate.toLocaleDateString('en-US', { 
+                    weekday: 'short', 
+                    month: 'short', 
+                    day: 'numeric', 
+                    year: 'numeric' 
+                });
+            }
+            
+            if (!entry || !entry.anxiety || entry.anxiety.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--secondary); padding: 2rem;">No anxiety logs for this date</p>';
+                return;
+            }
+            
+            let html = '';
+            entry.anxiety.forEach((e, index) => {
+                html += `
+                    <div style="background: var(--surface); padding: 1rem; border-radius: 2px; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="flex: 1;">
+                            <div>
+                                <span style="font-weight: 600; margin-right: 1rem;">${e.time}</span>
+                                <span style="color: #8b5cf6; font-weight: 600; font-size: 1.1rem;">Level: ${e.level}/10</span>
+                            </div>
+                            ${e.note ? `<div style="font-size: 0.9rem; color: var(--secondary); margin-top: 0.5rem;">${e.note}</div>` : ''}
+                        </div>
+                        <div>
+                            <button onclick="editAnxietyLog('${selectedAnxietyDate}', ${index}, '${e.time}', ${e.level}, '${(e.note || '').replace(/'/g, "\\'")}')" 
+                                    style="background: var(--primary); color: white; border: none; padding: 0.5rem 0.75rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; margin-right: 0.5rem;">
+                                Edit
+                            </button>
+                            <button onclick="deleteAnxietyLogByDate('${selectedAnxietyDate}', ${index})" 
+                                    style="background: var(--danger); color: white; border: none; padding: 0.5rem 0.75rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        function editAnxietyLog(date, index, oldTime, oldLevel, oldNote) {
+            const newLevel = prompt(`Edit anxiety level (0-10):`, oldLevel);
+            if (newLevel !== null && newLevel >= 0 && newLevel <= 10) {
+                const newNote = prompt('Edit note (optional):', oldNote);
+                const entry = healthData.find(e => e.date === date);
+                if (entry && entry.anxiety && entry.anxiety[index]) {
+                    entry.anxiety[index].level = parseInt(newLevel);
+                    entry.anxiety[index].note = newNote || '';
+                    saveAnxietyToFirebase(entry);
+                    loadAnxietyLogsForDate();
+                    loadAnxietyHistory();
+                }
+            }
+        }
+        
+        function deleteAnxietyLogByDate(date, index) {
+            if (confirm('Delete this anxiety log?')) {
+                const entry = healthData.find(e => e.date === date);
+                if (entry && entry.anxiety) {
+                    entry.anxiety.splice(index, 1);
+                    saveAnxietyToFirebase(entry);
+                    loadAnxietyLogsForDate();
+                    loadAnxietyHistory();
+                }
+            }
+        }
+        
+        function loadAnxietyHistory() {
+            const container = document.getElementById('anxietyHistoryView');
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Time</th><th>Level</th><th>Note</th><th>Actions</th></tr></thead><tbody>';
+            
+            // Flatten all anxiety logs with their dates
+            const allLogs = [];
+            healthData.forEach(entry => {
+                if (entry.anxiety && entry.anxiety.length > 0) {
+                    entry.anxiety.forEach((log, index) => {
+                        allLogs.push({
+                            date: entry.date,
+                            index: index,
+                            time: log.time,
+                            level: log.level,
+                            note: log.note || ''
+                        });
+                    });
+                }
+            });
+            
+            // Sort by date (newest first)
+            allLogs.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            // Build table rows
+            allLogs.forEach(log => {
+                html += `<tr>
+                    <td>${log.date}</td>
+                    <td>${log.time}</td>
+                    <td style="font-weight: 600; color: #8b5cf6;">${log.level}/10</td>
+                    <td>${log.note}</td>
+                    <td>
+                        <button onclick="editAnxietyLog('${log.date}', ${log.index}, '${log.time}', ${log.level}, '${log.note.replace(/'/g, "\\'")}')" 
+                                style="padding: 0.25rem 0.75rem; background: var(--primary); color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 0.875rem; margin-right: 0.25rem;">
+                            Edit
+                        </button>
+                        <button onclick="deleteAnxietyLog('${log.date}', ${log.index})" 
+                                style="padding: 0.25rem 0.75rem; background: var(--danger); color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 0.875rem;">
+                            Delete
+                        </button>
+                    </td>
+                </tr>`;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html || '<p style="text-align: center; color: var(--secondary); padding: 2rem;">No anxiety logs yet</p>';
+                }
         
         // View switching
         function showView(viewName) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.querySelectorAll('.nav-tabs button').forEach(b => b.classList.remove('active'));
             
-            document.getElementById(viewName + 'View').classList.add('active');
-            event.target.classList.add('active');
+            const targetView = document.getElementById(viewName + 'View');
+            if (targetView) {
+                targetView.classList.add('active');
+            }
+            
+            // Hide/show main navigation tabs based on view
+            const mainNavTabs = document.getElementById('mainNavTabs');
+            const settingsSubPages = ['settings', 'energy', 'agitation', 'anxiety', 'notes', 'history'];
+            
+            if (settingsSubPages.includes(viewName)) {
+                // Hide main tabs when in Settings or its sub-pages
+                if (mainNavTabs) mainNavTabs.style.display = 'none';
+            } else {
+                // Show main tabs for other views
+                if (mainNavTabs) mainNavTabs.style.display = 'flex';
+            }
+            
+            // Find and activate the corresponding nav button
+            const navButtons = document.querySelectorAll('.nav-tabs button');
+            navButtons.forEach(button => {
+                if (button.textContent.toLowerCase().includes(viewName) || 
+                    (viewName === 'daily' && button.textContent.includes('Daily Entry'))) {
+                    button.classList.add('active');
+                }
+            });
 
             switch(viewName) {
                 case 'meds': loadMedsHistory(); break;
                 case 'diet': loadDietHistory(); break;
                 case 'exercise': loadExerciseHistory(); break;
-                case 'weights': initWorkoutsCollection(); loadTodaysWorkouts();   break;
+                case 'weights': initWorkoutsCollection(); loadTodaysWorkouts(); loadSessionData(); break;
                 case 'ailments': loadAilmentsHistory(); break;
                 case 'energy': 
                     const energyPicker = document.getElementById('energyDatePicker');
@@ -1958,6 +2458,14 @@
                     loadAgitationLogsForDate();
                     loadAgitationHistory(); 
                     break;
+                case 'anxiety': 
+                    const anxietyPicker = document.getElementById('anxietyDatePicker');
+                    if (anxietyPicker) {
+                        anxietyPicker.value = selectedAnxietyDate;
+                    }
+                    loadAnxietyLogsForDate();
+                    loadAnxietyHistory(); 
+                    break;
                 case 'notes': loadNotesHistory(); break;
                 case 'media': loadMediaHistory(); break;
                 case 'history': loadCompleteHistory(); break;
@@ -1966,7 +2474,10 @@
 
         // History views
         function loadMedsHistory() {
+            console.log('===== LOADING MEDS HISTORY =====');
+            console.log('healthData length:', healthData.length);
             const container = document.getElementById('medsHistory');
+            console.log('Container element:', container);
             let html = '<table class="history-table"><thead><tr><th>Date</th><th>Concerta</th><th>Boost</th><th>Vitamin C</th><th>Omega-3</th><th>ZMA (ON)</th><th>NO2 (pure)</th><th>Probiotic</th><th>L/Z (NOW)</th><th>D3/K (pure)</th><th>Melatonin</th><th>M-Blue</th><th>Potassium</th><th>Creatine</th><th>Actions</th></tr></thead><tbody>';
             healthData.forEach(entry => {
                 html += `<tr>
@@ -1989,6 +2500,8 @@
             });
             html += '</tbody></table>';
             container.innerHTML = html;
+            console.log('HTML set, rows created:', healthData.length);
+            console.log('Sample onclick from first row:', healthData.length > 0 ? `editEntry('${healthData[0].date}')` : 'no data');
         }
 
         function loadDietHistory() {
@@ -2142,53 +2655,40 @@
 
         // Edit entry from history view
         function editEntry(date) {
-            console.log('Editing entry for:', date);
-            
-            // Check if this is from Exercise History with Weights selected
-            const entry = healthData.find(e => e.date === date);
-            if (entry && entry.exercise === 'weights') {
-                console.log('Exercise type is Weights, navigating to Weights tab for date:', date);
+            try {
+                console.log('===== EDIT ENTRY CLICKED =====');
+                console.log('Date parameter received:', date);
+                console.log('Type of date:', typeof date);
                 
-                // Navigate to Weights tab
-                selectedWeightsDate = date;
-                const weightsTab = Array.from(document.querySelectorAll('.nav-tabs button')).find(b => b.textContent.includes('Weights'));
-                if (weightsTab) {
-                    weightsTab.click();
-                    
-                    // Set the weights date picker and load workouts
-                    setTimeout(() => {
-                        const weightsPicker = document.getElementById('weightsDatePicker');
-                        if (weightsPicker) {
-                            weightsPicker.value = date;
-                            console.log('Loading workouts for date:', date);
-                            loadTodaysWorkouts();
-                            
-                            // Check if workouts exist
-                            const workoutsForDate = allWorkouts.filter(w => w.date === date);
-                            console.log('Workouts found for', date, ':', workoutsForDate.length);
-                            
-                            if (workoutsForDate.length === 0) {
-                                console.log('No workout data found in workouts collection for this date');
-                                console.log('This means Exercise Type is set to "Weights" but no actual exercises have been logged yet');
-                            }
-                        }
-                    }, 100);
-                }
-            } else {
-                // Normal edit flow - go to Daily Entry
+                // Set current date and load the data
                 currentDate = date;
-                loadDate(date);
-                showView('daily');
+                console.log('Set currentDate to:', currentDate);
                 
-                // Update date picker to show the loaded date
+                // Update date picker
                 const picker = document.getElementById('datePicker');
+                console.log('Date picker element:', picker);
                 if (picker) {
                     picker.value = date;
+                    console.log('Set picker value to:', date);
                 }
+                
+                // Load the entry data
+                console.log('About to call loadDate...');
+                loadDate(date);
+                console.log('loadDate completed');
+                
+                // Switch to Daily Entry tab
+                console.log('About to call showView(daily)...');
+                showView('daily');
+                console.log('showView completed');
+                console.log('===== EDIT ENTRY COMPLETED =====');
+            } catch (error) {
+                console.error('ERROR in editEntry:', error);
+                alert('Error editing entry: ' + error.message);
             }
         }
-
-                // Change date from picker
+        
+        
         function changeDate() {
             const picker = document.getElementById('datePicker');
             if (picker && picker.value) {
@@ -2275,12 +2775,17 @@
                 document.getElementById('headache').value = entry.headache || 0;
                 document.getElementById('lightheaded').value = entry.lightheaded || 0;
                 // document.getElementById('agitated').value = entry.agitated || 0; // Field removed
+                displayAgitationLog(entry.agitation || []);
+                displayAnxietyLog(entry.anxiety || []);
                 document.getElementById('depressed').value = entry.depressed || 0;
                 document.getElementById('stomach').value = entry.stomach || 0;
                 document.getElementById('sinuses').value = entry.sinuses || 0;
                 
                 // Notes
                 document.getElementById('notes').value = entry.notes || '';
+                
+                // Energy
+                displayEnergyLog(entry.energy || []);
                 
                 // Media
                 document.getElementById('appleTv').value = entry.appleTv || 0;
@@ -2294,14 +2799,6 @@
                 document.getElementById('youtube').value = entry.youtube || 0;
                 
                 document.getElementById('youtubeTv').value = entry.youtubeTv || 0;
-                
-                
-                console.log('✅ Media values SET in DOM:',{
-                    appleTv: document.getElementById('appleTv').value,
-                    appleTvDisplay: document.getElementById('appleTvDisplay').textContent,
-                    netflix: document.getElementById('netflix').value,
-                    netflixDisplay: document.getElementById('netflixDisplay').textContent
-                });
                 
                 console.log('Entry loaded successfully');
             } else {
@@ -2677,7 +3174,7 @@
             const sets = parseInt(document.getElementById('sets').value);
             const reps = parseInt(document.getElementById('reps').value);
             const weight = parseFloat(document.getElementById('weightAmount').value);
-            const duration = parseInt(document.getElementById('workoutDuration').value) || 0;
+            const sessionDuration = parseInt(document.getElementById('sessionDuration').value) || 0;
             const notes = document.getElementById('workoutNotes').value.trim();
             
             if (!exercise) {
@@ -2700,23 +3197,26 @@
                     sets: sets,
                     reps: reps,
                     weight: weight || 0,
-                    duration: duration,
                     notes: notes,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 };
                 
                 await workoutsCollection.add(workout);
+                
+                // Save session duration to daily entry if set
+                if (sessionDuration > 0) {
+                    await saveSessionDuration(sessionDuration);
+                }
+                
                 await loadWorkoutsFromFirebase();
                 
                 document.getElementById('exerciseName').value = '';
                 document.getElementById('sets').value = '3';
                 document.getElementById('reps').value = '10';
                 document.getElementById('weightAmount').value = '0';
-                document.getElementById('workoutDuration').value = '';
                 document.getElementById('workoutNotes').value = '';
                 
                 loadTodaysWorkouts();
-                
                 
                 updateSyncStatus('', 'Synced');
                 
@@ -2777,12 +3277,11 @@
                         <div class="weights-exercise-content">
                             <div class="weights-exercise-info">
                                 <div class="weights-exercise-name">${workout.exercise}</div>
-                                <div class="weights-exercise-details">${workout.sets} sets × ${workout.reps} reps @ ${workout.weight} lbs${workout.duration ? ` • ${workout.duration} min` : ''}</div>
+                                <div class="weights-exercise-details">${workout.sets} sets × ${workout.reps} reps @ ${workout.weight} lbs</div>
                                 ${workout.notes ? `<div class="weights-exercise-notes">${workout.notes}</div>` : ''}
                             </div>
                             <div class="weights-exercise-actions">
-                                ${time ? `<span class="weights-exercise-time">${time}</span>` : ''}
-                                <button onclick="editWorkout('${workout.id}', '${(workout.workoutName || '').replace(/'/g, "\\'")}', '${workout.exercise.replace(/'/g, "\\'")}', ${workout.sets}, ${workout.reps}, ${workout.weight}, ${workout.duration || 0}, '${(workout.notes || '').replace(/'/g, "\\'")}', '${workout.date}')" 
+                                <button onclick="editWorkout('${workout.id}', '${(workout.workoutName || '').replace(/'/g, "\\'")}', '${workout.exercise.replace(/'/g, "\\'")}', ${workout.sets}, ${workout.reps}, ${workout.weight}, '${(workout.notes || '').replace(/'/g, "\\'")}', '${workout.date}')" 
                                         class="weights-btn-edit">
                                     Edit
                                 </button>
@@ -2816,23 +3315,63 @@
         
 
         
-        // Update workout name display
-        function updateWorkoutNameDisplay() {
-            const name = document.getElementById('workoutName').value.trim();
-            const display = document.getElementById('currentWorkoutDisplay');
-            const nameElement = document.getElementById('currentWorkoutName');
+        // Toggle session info visibility
+        function toggleSessionInfo() {
+            const section = document.getElementById('sessionInfoSection');
+            const icon = document.getElementById('sessionInfoToggleIcon');
             
-            if (name) {
-                nameElement.textContent = name;
-                display.style.display = 'block';
+            if (section.style.display === 'none') {
+                section.style.display = 'block';
+                icon.textContent = '▲';
             } else {
-                display.style.display = 'none';
+                section.style.display = 'none';
+                icon.textContent = '▼';
             }
         }
         
-        function editCurrentWorkout() {
-            document.getElementById('workoutName').focus();
-            document.getElementById('workoutName').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Save session info (workout name and duration)
+        async function saveSessionInfo() {
+            const workoutName = document.getElementById('workoutName').value.trim();
+            const sessionDuration = parseInt(document.getElementById('sessionDuration').value) || 0;
+            
+            try {
+                updateSyncStatus('syncing', 'Saving session info...');
+                
+                // Save session duration to daily entry
+                if (sessionDuration > 0) {
+                    await saveSessionDuration(sessionDuration);
+                }
+                
+                // Update all workouts for this date with the new workout name
+                const dateWorkouts = allWorkouts.filter(w => w.date === selectedWeightsDate);
+                for (const workout of dateWorkouts) {
+                    if (workout.id) {
+                        await workoutsCollection.doc(workout.id).update({
+                            workoutName: workoutName
+                        });
+                    }
+                }
+                
+                // Reload workouts
+                await loadWorkoutsFromFirebase();
+                loadTodaysWorkouts();
+                
+                updateSyncStatus('', 'Synced');
+                alert('Session info saved!');
+                
+                // Collapse the section after saving
+                toggleSessionInfo();
+                
+            } catch (error) {
+                console.error('Error saving session info:', error);
+                updateSyncStatus('offline', 'Save error');
+                alert('Error saving session info');
+            }
+        }
+        
+        // Update workout name display (deprecated - kept for compatibility)
+        function updateWorkoutNameDisplay() {
+            // No longer needed - blue banner removed
         }
         
         // Change weights date picker
@@ -2841,14 +3380,62 @@
             if (picker && picker.value) {
                 selectedWeightsDate = picker.value;
                 loadTodaysWorkouts();
+                loadSessionData();
+            }
+        }
+        
+        // Save session duration to daily entry
+        async function saveSessionDuration(duration) {
+            try {
+                const entry = healthData.find(e => e.date === selectedWeightsDate);
                 
+                if (entry && entry.id) {
+                    // Update existing entry
+                    await healthCollection.doc(entry.id).update({
+                        sessionDuration: duration
+                    });
+                } else {
+                    // Create new entry with session duration
+                    await healthCollection.add({
+                        date: selectedWeightsDate,
+                        sessionDuration: duration,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+                
+                // Reload data
+                await loadDataFromFirebase();
+            } catch (error) {
+                console.error('Error saving session duration:', error);
+            }
+        }
+        
+        // Load session-level data (name and duration) for selected date
+        function loadSessionData() {
+            const entry = healthData.find(e => e.date === selectedWeightsDate);
+            
+            // Load workout name from first workout of the day, or from daily entry
+            const dateWorkouts = allWorkouts.filter(w => w.date === selectedWeightsDate);
+            if (dateWorkouts.length > 0 && dateWorkouts[0].workoutName) {
+                document.getElementById('workoutName').value = dateWorkouts[0].workoutName;
+                updateWorkoutNameDisplay();
+            } else {
+                document.getElementById('workoutName').value = '';
+                updateWorkoutNameDisplay();
+            }
+            
+            // Load session duration from daily entry
+            if (entry && entry.sessionDuration) {
+                document.getElementById('sessionDuration').value = entry.sessionDuration;
+            } else {
+                document.getElementById('sessionDuration').value = '';
             }
         }
         
         // Edit workout - populate form with existing data
         let editingWorkoutId = null;
         
-        function editWorkout(workoutId, workoutName, exercise, sets, reps, weight, duration, notes, date) {
+        function editWorkout(workoutId, workoutName, exercise, sets, reps, weight, notes, date) {
             editingWorkoutId = workoutId;
             
             // Set the date picker to this workout's date
@@ -2864,7 +3451,7 @@
             document.getElementById('sets').value = sets;
             document.getElementById('reps').value = reps;
             document.getElementById('weightAmount').value = weight;
-            document.getElementById('workoutDuration').value = duration || '';
+            
             document.getElementById('workoutNotes').value = notes;
             
             // Scroll to form
@@ -2886,7 +3473,7 @@
             const sets = parseInt(document.getElementById('sets').value);
             const reps = parseInt(document.getElementById('reps').value);
             const weight = parseFloat(document.getElementById('weightAmount').value);
-            const duration = parseInt(document.getElementById('workoutDuration').value) || 0;
+            
             const notes = document.getElementById('workoutNotes').value.trim();
             
             if (!exercise) {
@@ -2909,7 +3496,7 @@
                     sets: sets,
                     reps: reps,
                     weight: weight || 0,
-                    duration: duration,
+                    
                     notes: notes,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 };
@@ -2931,7 +3518,7 @@
                 document.getElementById('sets').value = '3';
                 document.getElementById('reps').value = '10';
                 document.getElementById('weightAmount').value = '0';
-                document.getElementById('workoutDuration').value = '';
+                
                 document.getElementById('workoutNotes').value = '';
                 
                 // Reset button text
