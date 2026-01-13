@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Expense Tracker - Cloud Sync</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <style>
+        /* Helvetica Neue Display Font Family */
+        
+        /* Hairline - 100 */
+        @font-face {
+            font-family: 'Helvetica Neue Display';
+            src: url('/HelveticaNowDisplay-Hairline.woff2') format('woff2'),
+                 url('/HelveticaNowDisplay-Hairline.woff') format('woff');
+            font-weight: 100;
+            font-style: normal;
+            font-display: swap;
+        }
+        
+        /* Thin - 200 */
+        @font-face {
+            font-family: 'Helvetica Neue Display';
+            src: url('/HelveticaNowDisplay-Thin.woff2') format('woff2'),
+                 url('/HelveticaNowDisplay-Thin.woff') format('woff');
+            font-weight: 200;
+            font-style: normal;
+            font-display: swap;
+        }
+        
+        /* Light - 300 */
+        @font-face {
+            font-family: 'Helvetica Neue Display';
+            src: url('/HelveticaNowDisplay-Light.woff2') format('woff2'),
+                 url('/HelveticaNowDisplay-Light.woff') format('woff');
+            font-weight: 300;
+            font-style: normal;
+            font-display: swap;
+        }
+        
+        /* Regular - 400 */
+        @font-face {
+            font-family: 'Helvetica Neue Display';
+            src: url('/HelveticaNowDisplay-Regular.woff2') format('woff2'),
+                 url('/HelveticaNowDisplay-Regular.woff') format('woff');
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+        
+        /* Medium - 500 */
+        @font-face {
+            font-family: 'Helvetica Neue Display';
+            src: url('/HelveticaNowDisplay-Medita.woff2') format('woff2'),
+                 url('/HelveticaNowDisplay-Medita.woff') format('woff');
+            font-weight: 500;
+            font-style: normal;
+            font-display: swap;
+        }
+        
+        /* Bold - 700 */
+        @font-face {
+            font-family: 'Helvetica Neue Display';
+            src: url('/HelveticaNowDisplay-Bold.woff2') format('woff2'),
+                 url('/HelveticaNowDisplay-Bold.woff') format('woff');
+            font-weight: 700;
+            font-style: normal;
+            font-display: swap;
+        }
+        
+        /* Black - 900 */
+        @font-face {
+            font-family: 'Helvetica Neue Display';
+            src: url('/HelveticaNowDisplay-Black.woff2') format('woff2'),
+                 url('/HelveticaNowDisplay-Black.woff') format('woff');
+            font-weight: 900;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --secondary: #64748b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --personal: #8b5cf6;
+            --business: #059669;
+            --bg: #ffffff;
+            --surface: #f8fafc;
+            --text: #0f172a;
+            --border: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Helvetica Neue Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--surface);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 400;
+        }
+        
+        label {
+            font-weight: 600;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.02);
+            color: #0f172a;
+            padding: 1.5rem;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .sync-status {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.875rem;
+        }
+
+        .sync-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        .sync-indicator.syncing {
+            background: var(--warning);
+        }
+
+        .sync-indicator.offline {
+            background: var(--secondary);
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 2px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+        button.secondary {
+            background: var(--secondary);
+        }
+
+        button.secondary:hover {
+            background: #475569;
+        }
+
+        button.success {
+            background: #10b981;
+        }
+        
+        button.success:hover {
+            background: #059669;
+        }
+
+        button.danger {
+            background: var(--danger);
+        }
+
+        button.danger:hover {
+            background: #dc2626;
+        }
+
+        button.personal {
+            background: var(--personal);
+        }
+
+        button.personal:hover {
+            background: #7c3aed;
+        }
+
+        button.business {
+            background: var(--business);
+        }
+
+        button.business:hover {
+            background: #047857;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+            padding: 0.5rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+        }
+
+        .nav-tabs button {
+            padding: 0.75rem 1.25rem;
+            background: transparent;
+            color: var(--secondary);
+            border-radius: 2px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            white-space: nowrap;
+        }
+
+        .nav-tabs button:hover {
+            background: var(--surface);
+            color: var(--primary);
+            transform: none;
+        }
+
+        .nav-tabs button.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        .view h2 {
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+        }
+
+        .expense-type-selector {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            justify-content: center;
+        }
+
+        .expense-type-selector button {
+            flex: 1;
+            max-width: 300px;
+            padding: 1.5rem;
+            font-size: 1.125rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .form-section {
+            margin-bottom: 2rem;
+        }
+
+        .form-section h3 {
+            margin-bottom: 1rem;
+            color: #4b5563;
+            font-size: 2rem;
+            line-height: 1.125em;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            overflow-x: auto;
+            display: block;
+        }
+
+        .history-table th,
+        .history-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .history-table th {
+            background: var(--surface);
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+
+        .history-table tr:hover {
+            background: var(--surface);
+        }
+
+        .history-table button {
+            padding: 0.25rem 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        .expense-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 2px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .expense-badge.personal {
+            background: #f3e8ff;
+            color: var(--personal);
+        }
+
+        .expense-badge.business {
+            background: #d1fae5;
+            color: var(--business);
+        }
+
+        .filter-section {
+            background: var(--surface);
+            padding: 1.5rem;
+            border-radius: 2px;
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 2px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+
+        .summary-card h3 {
+            font-size: 0.875rem;
+            opacity: 0.9;
+            margin-bottom: 0.5rem;
+        }
+
+        .summary-card .amount {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .summary-card.personal {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        }
+
+        .summary-card.business {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .summary-card.total {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0.5rem;
+            }
+
+            .view {
+                padding: 1rem;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .action-buttons button {
+                width: 100%;
+            }
+
+            .expense-type-selector {
+                flex-direction: column;
+            }
+
+            .expense-type-selector button {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1><a href="/" style="color: #0f172a; text-decoration: none; text-transform: uppercase;" onclick="showView('entry'); return false;">Expense Tracker</a></h1>
+            <button onclick="showView('settings')" style="padding: 0.5rem 1rem; background: white; border: none; color: #0f172a; border-radius: 2px; cursor: pointer; font-weight: 400; text-transform: uppercase;">Settings</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Settings View -->
+        <div id="settingsView" class="view">
+            <button onclick="showView('entry')" class="secondary" style="margin-bottom: 1rem;">← Back to Expenses</button>
+            <h2>⚙️ Settings</h2>
+            
+            <!-- Sync Status -->
+            <div style="background: white; border: 2px solid #e5e7eb; padding: 1.5rem; border-radius: 2px; margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                <h3 style="margin-top: 0; color: #1f2937;">Sync Status</h3>
+                <div class="sync-status" style="justify-content: flex-start;">
+                    <div class="sync-indicator" id="syncIndicator"></div>
+                    <span id="syncText">Syncing...</span>
+                    <span id="entriesCount" style="margin-left: 1rem;">0 expenses</span>
+                </div>
+            </div>
+            
+            <!-- Firebase Sync Status -->
+            <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 2rem; border-radius: 2px; margin-bottom: 2rem; text-align: center; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);">
+                <h3 style="margin: 0 0 0.5rem 0; font-size: 1.5rem;">🔥 Firebase Cloud Sync Enabled</h3>
+                <p style="margin: 0; opacity: 0.95;">All expenses sync automatically across all your devices in real-time!</p>
+            </div>
+            
+            <!-- Data Management -->
+            <div style="background: white; border: 2px solid #e5e7eb; padding: 2rem; border-radius: 2px; margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                <h3 style="margin-top: 0; color: #1f2937;">📊 Data Management</h3>
+                <div style="display: flex; gap: 1rem; margin: 1.5rem 0; flex-wrap: wrap;">
+                    <button onclick="importCSV()" style="padding: 0.75rem 1.5rem; background: #4285f4; color: white; border: none; border-radius: 2px; cursor: pointer; font-weight: 600; font-size: 1rem; box-shadow: 0 2px 4px rgba(66, 133, 244, 0.3); transition: all 0.2s;">📥 Import CSV</button>
+                    <button onclick="exportCSV()" style="padding: 0.75rem 1.5rem; background: #4285f4; color: white; border: none; border-radius: 2px; cursor: pointer; font-weight: 600; font-size: 1rem; box-shadow: 0 2px 4px rgba(66, 133, 244, 0.3); transition: all 0.2s;">📤 Export CSV</button>
+                </div>
+            </div>
+            
+            <!-- Danger Zone -->
+            <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 2px; padding: 2rem; box-shadow: 0 2px 4px rgba(255, 193, 7, 0.2);">
+                <h3 style="margin-top: 0; color: #856404;">⚠️ Danger Zone</h3>
+                <button onclick="clearAllData()" style="background: #dc3545; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 2px; cursor: pointer; font-weight: 600; width: 100%; font-size: 1rem; box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);">🗑️ Clear All Data</button>
+                <p style="font-size: 0.875rem; color: #856404; margin: 0.75rem 0 0 0; line-height: 1.5;">⚠️ This will permanently delete all expenses from Firebase. Make sure to export your data first!</p>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="nav-tabs">
+            <button class="active" onclick="showView('entry')">💰 Add Expense</button>
+            <button onclick="showView('summary')">📊 Summary</button>
+            <button onclick="showView('history')">📋 History</button>
+        </div>
+
+        <!-- Add Expense View -->
+        <div id="entryView" class="view active">
+            <h2>Add New Expense</h2>
+            
+            <!-- Expense Type Selector -->
+            <div class="expense-type-selector">
+                <button class="personal" onclick="setExpenseType('personal')" id="btnPersonal">
+                    👤 Personal Expense
+                </button>
+                <button class="business" onclick="setExpenseType('business')" id="btnBusiness">
+                    💼 Business Expense
+                </button>
+            </div>
+
+            <input type="hidden" id="expenseType" value="">
+            <input type="hidden" id="expenseId" value="">
+
+            <div class="form-section">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="date">Date *</label>
+                        <input type="date" id="date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cost">Cost *</label>
+                        <input type="number" id="cost" step="0.01" placeholder="0.00" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="item">Item *</label>
+                        <input type="text" id="item" list="itemList" placeholder="What did you buy?">
+                        <datalist id="itemList"></datalist>
+                    </div>
+                    <div class="form-group">
+                        <label for="location">Location</label>
+                        <input type="text" id="location" list="locationList" placeholder="Where?">
+                        <datalist id="locationList"></datalist>
+                    </div>
+                    <div class="form-group">
+                        <label for="category">Category *</label>
+                        <select id="category" required>
+                            <option value="">Select category...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="paymentMethod">Payment Method *</label>
+                        <select id="paymentMethod" required>
+                            <option value="">Select payment method...</option>
+                            <option value="DFCU debit card">DFCU debit card</option>
+                            <option value="AA cc">AA cc</option>
+                            <option value="BARCLAYS cc">BARCLAYS cc</option>
+                            <option value="Cash">Cash</option>
+                            <option value="WF business debit">WF business debit</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button onclick="saveExpense()">💾 Save Expense</button>
+                <button onclick="clearForm()" class="secondary">🗑️ Clear Form</button>
+            </div>
+        </div>
+
+        <!-- Summary View -->
+        <div id="summaryView" class="view">
+            <h2>📊 Expense Summary</h2>
+            
+            <!-- Filter Section -->
+            <div class="filter-section">
+                <h3>Filter Options</h3>
+                <div class="filter-grid">
+                    <div class="form-group">
+                        <label for="filterStartDate">Start Date</label>
+                        <input type="date" id="filterStartDate" onchange="applySummaryFilters()">
+                    </div>
+                    <div class="form-group">
+                        <label for="filterEndDate">End Date</label>
+                        <input type="date" id="filterEndDate" onchange="applySummaryFilters()">
+                    </div>
+                    <div class="form-group">
+                        <label for="filterExpenseType">Expense Type</label>
+                        <select id="filterExpenseType" onchange="applySummaryFilters()">
+                            <option value="all">All</option>
+                            <option value="personal">Personal Only</option>
+                            <option value="business">Business Only</option>
+                        </select>
+                    </div>
+                </div>
+                <button onclick="clearSummaryFilters()" class="secondary" style="margin-top: 1rem;">Clear Filters</button>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="summary-cards" id="summaryCards"></div>
+
+            <!-- Category Breakdown -->
+            <div style="margin-top: 2rem;">
+                <h3>Category Breakdown</h3>
+                <div id="categoryBreakdown"></div>
+            </div>
+        </div>
+
+        <!-- History View -->
+        <div id="historyView" class="view">
+            <h2>📋 Expense History</h2>
+            
+            <!-- Filter Section -->
+            <div class="filter-section">
+                <h3>Filter Options</h3>
+                <div class="filter-grid">
+                    <div class="form-group">
+                        <label for="historyStartDate">Start Date</label>
+                        <input type="date" id="historyStartDate" onchange="applyHistoryFilters()">
+                    </div>
+                    <div class="form-group">
+                        <label for="historyEndDate">End Date</label>
+                        <input type="date" id="historyEndDate" onchange="applyHistoryFilters()">
+                    </div>
+                    <div class="form-group">
+                        <label for="historyCategory">Category</label>
+                        <select id="historyCategory" onchange="applyHistoryFilters()">
+                            <option value="">All Categories</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="historyPayment">Payment Method</label>
+                        <select id="historyPayment" onchange="applyHistoryFilters()">
+                            <option value="">All Payment Methods</option>
+                            <option value="DFCU debit card">DFCU debit card</option>
+                            <option value="AA cc">AA cc</option>
+                            <option value="BARCLAYS cc">BARCLAYS cc</option>
+                            <option value="Cash">Cash</option>
+                            <option value="WF business debit">WF business debit</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="historyExpenseType">Expense Type</label>
+                        <select id="historyExpenseType" onchange="applyHistoryFilters()">
+                            <option value="">All Types</option>
+                            <option value="personal">Personal</option>
+                            <option value="business">Business</option>
+                        </select>
+                    </div>
+                </div>
+                <button onclick="clearHistoryFilters()" class="secondary" style="margin-top: 1rem;">Clear Filters</button>
+            </div>
+
+            <div id="historyTableContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase configuration - REPLACE WITH YOUR CREDENTIALS
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT.firebasestorage.app",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const expensesCollection = db.collection('expenses');
+
+        // Global state
+        let expensesData = [];
+        let isOnline = navigator.onLine;
+
+        // Categories
+        const personalCategories = [
+            'Breakfast', 'Dessert', 'Dinner', 'Groceries', 'Lunch', 'Bar', 
+            'Cigar bar', 'Date', 'Streaming', 'Food - Home', 'Food - Going Out', 
+            'Entertainment - Home', 'Entertainment - Going Out', 'Other'
+        ];
+
+        const businessCategories = [
+            'Advertising', 'Bank fees', 'Client expense', 'Continuing education',
+            'Fuel', 'Gift', 'Internet services', 'Legal', 'Office supplies',
+            'Tools', 'Travel', 'Taxes'
+        ];
+
+        // Update sync status
+        function updateSyncStatus(status, text) {
+            const indicator = document.getElementById('syncIndicator');
+            const syncText = document.getElementById('syncText');
+            
+            indicator.className = 'sync-indicator ' + status;
+            syncText.textContent = text;
+        }
+
+        // Monitor online/offline status
+        window.addEventListener('online', () => {
+            isOnline = true;
+            updateSyncStatus('', 'Online - Syncing...');
+        });
+
+        window.addEventListener('offline', () => {
+            isOnline = false;
+            updateSyncStatus('offline', 'Offline');
+        });
+
+        // Set expense type
+        function setExpenseType(type) {
+            document.getElementById('expenseType').value = type;
+            
+            // Update button states
+            document.getElementById('btnPersonal').style.opacity = type === 'personal' ? '1' : '0.5';
+            document.getElementById('btnBusiness').style.opacity = type === 'business' ? '1' : '0.5';
+            
+            // Update category dropdown
+            const categorySelect = document.getElementById('category');
+            categorySelect.innerHTML = '<option value="">Select category...</option>';
+            
+            const categories = type === 'personal' ? personalCategories : businessCategories;
+            categories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat;
+                categorySelect.appendChild(option);
+            });
+        }
+
+        // Load data from Firebase
+        async function loadDataFromFirebase() {
+            try {
+                updateSyncStatus('syncing', 'Loading...');
+                
+                const snapshot = await expensesCollection.orderBy('date', 'desc').get();
+                expensesData = [];
+                
+                snapshot.forEach(doc => {
+                    expensesData.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                
+                updateEntriesCount();
+                updateSyncStatus('', 'Synced');
+                populateDataLists();
+                
+                // Set up real-time listener
+                expensesCollection.onSnapshot((snapshot) => {
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === 'added' || change.type === 'modified') {
+                            const data = { id: change.doc.id, ...change.doc.data() };
+                            const index = expensesData.findIndex(e => e.id === data.id);
+                            
+                            if (index >= 0) {
+                                expensesData[index] = data;
+                            } else {
+                                expensesData.push(data);
+                            }
+                        } else if (change.type === 'removed') {
+                            expensesData = expensesData.filter(e => e.id !== change.doc.id);
+                        }
+                    });
+                    
+                    expensesData.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    updateEntriesCount();
+                    populateDataLists();
+                    
+                    // Refresh current view if needed
+                    const activeView = document.querySelector('.view.active');
+                    if (activeView.id === 'summaryView') {
+                        applySummaryFilters();
+                    } else if (activeView.id === 'historyView') {
+                        applyHistoryFilters();
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+                updateSyncStatus('offline', 'Error loading');
+            }
+        }
+
+        // Update entries count
+        function updateEntriesCount() {
+            document.getElementById('entriesCount').textContent = `${expensesData.length} expenses`;
+        }
+
+        // Populate datalists for autocomplete
+        function populateDataLists() {
+            const items = [...new Set(expensesData.map(e => e.item).filter(Boolean))];
+            const locations = [...new Set(expensesData.map(e => e.location).filter(Boolean))];
+            
+            const itemList = document.getElementById('itemList');
+            itemList.innerHTML = '';
+            items.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item;
+                itemList.appendChild(option);
+            });
+            
+            const locationList = document.getElementById('locationList');
+            locationList.innerHTML = '';
+            locations.forEach(location => {
+                const option = document.createElement('option');
+                option.value = location;
+                locationList.appendChild(option);
+            });
+        }
+
+        // Save expense
+        async function saveExpense() {
+            try {
+                const expenseType = document.getElementById('expenseType').value;
+                if (!expenseType) {
+                    alert('Please select Personal or Business expense type first!');
+                    return;
+                }
+
+                const date = document.getElementById('date').value;
+                const cost = document.getElementById('cost').value;
+                const item = document.getElementById('item').value;
+                const category = document.getElementById('category').value;
+                const paymentMethod = document.getElementById('paymentMethod').value;
+
+                if (!date || !cost || !item || !category || !paymentMethod) {
+                    alert('Please fill in all required fields (marked with *)');
+                    return;
+                }
+
+                updateSyncStatus('syncing', 'Saving...');
+                
+                const expense = {
+                    date: date,
+                    item: item,
+                    cost: parseFloat(cost),
+                    location: document.getElementById('location').value || '',
+                    category: category,
+                    paymentMethod: paymentMethod,
+                    expenseType: expenseType,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                const expenseId = document.getElementById('expenseId').value;
+                
+                if (expenseId) {
+                    // Update existing
+                    await expensesCollection.doc(expenseId).update(expense);
+                    alert('Expense updated!');
+                } else {
+                    // Create new
+                    await expensesCollection.add(expense);
+                    alert('Expense saved!');
+                }
+                
+                updateSyncStatus('', 'Synced');
+                clearForm();
+                
+            } catch (error) {
+                console.error('Error saving:', error);
+                updateSyncStatus('offline', 'Save error');
+                alert('Error saving expense. Check console for details.');
+            }
+        }
+
+        // Clear form
+        function clearForm() {
+            document.getElementById('date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('cost').value = '';
+            document.getElementById('item').value = '';
+            document.getElementById('location').value = '';
+            document.getElementById('category').value = '';
+            document.getElementById('paymentMethod').value = '';
+            document.getElementById('expenseType').value = '';
+            document.getElementById('expenseId').value = '';
+            document.getElementById('btnPersonal').style.opacity = '1';
+            document.getElementById('btnBusiness').style.opacity = '1';
+        }
+
+        // Edit expense
+        function editExpense(id) {
+            const expense = expensesData.find(e => e.id === id);
+            if (!expense) return;
+
+            document.getElementById('expenseId').value = id;
+            document.getElementById('date').value = expense.date;
+            document.getElementById('cost').value = expense.cost;
+            document.getElementById('item').value = expense.item;
+            document.getElementById('location').value = expense.location || '';
+            document.getElementById('paymentMethod').value = expense.paymentMethod;
+            
+            setExpenseType(expense.expenseType);
+            document.getElementById('category').value = expense.category;
+
+            showView('entry');
+            window.scrollTo(0, 0);
+        }
+
+        // Delete expense
+        async function deleteExpense(id) {
+            if (!confirm('Delete this expense?')) return;
+
+            try {
+                updateSyncStatus('syncing', 'Deleting...');
+                await expensesCollection.doc(id).delete();
+                updateSyncStatus('', 'Synced');
+            } catch (error) {
+                console.error('Error deleting:', error);
+                alert('Error deleting expense');
+            }
+        }
+
+        // View switching
+        function showView(viewName) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-tabs button').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById(viewName + 'View').classList.add('active');
+            
+            const navButtons = document.querySelectorAll('.nav-tabs button');
+            navButtons.forEach(b => {
+                if (b.textContent.toLowerCase().includes(viewName === 'entry' ? 'add' : viewName)) {
+                    b.classList.add('active');
+                }
+            });
+
+            if (viewName === 'summary') {
+                applySummaryFilters();
+            } else if (viewName === 'history') {
+                populateHistoryFilters();
+                applyHistoryFilters();
+            }
+        }
+
+        // Summary filters
+        function applySummaryFilters() {
+            const startDate = document.getElementById('filterStartDate').value;
+            const endDate = document.getElementById('filterEndDate').value;
+            const expenseType = document.getElementById('filterExpenseType').value;
+
+            let filtered = expensesData;
+
+            if (startDate) {
+                filtered = filtered.filter(e => e.date >= startDate);
+            }
+            if (endDate) {
+                filtered = filtered.filter(e => e.date <= endDate);
+            }
+            if (expenseType !== 'all') {
+                filtered = filtered.filter(e => e.expenseType === expenseType);
+            }
+
+            displaySummary(filtered);
+        }
+
+        function clearSummaryFilters() {
+            document.getElementById('filterStartDate').value = '';
+            document.getElementById('filterEndDate').value = '';
+            document.getElementById('filterExpenseType').value = 'all';
+            applySummaryFilters();
+        }
+
+        function displaySummary(data) {
+            const personalTotal = data.filter(e => e.expenseType === 'personal').reduce((sum, e) => sum + e.cost, 0);
+            const businessTotal = data.filter(e => e.expenseType === 'business').reduce((sum, e) => sum + e.cost, 0);
+            const total = personalTotal + businessTotal;
+
+            const cardsHtml = `
+                <div class="summary-card personal">
+                    <h3>Personal Expenses</h3>
+                    <div class="amount">$${personalTotal.toFixed(2)}</div>
+                </div>
+                <div class="summary-card business">
+                    <h3>Business Expenses</h3>
+                    <div class="amount">$${businessTotal.toFixed(2)}</div>
+                </div>
+                <div class="summary-card total">
+                    <h3>Total Expenses</h3>
+                    <div class="amount">$${total.toFixed(2)}</div>
+                </div>
+            `;
+            document.getElementById('summaryCards').innerHTML = cardsHtml;
+
+            // Category breakdown
+            const categoryTotals = {};
+            data.forEach(e => {
+                if (!categoryTotals[e.category]) {
+                    categoryTotals[e.category] = 0;
+                }
+                categoryTotals[e.category] += e.cost;
+            });
+
+            const sortedCategories = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]);
+            
+            let breakdownHtml = '<table class="history-table"><thead><tr><th>Category</th><th>Amount</th><th>Percentage</th></tr></thead><tbody>';
+            sortedCategories.forEach(([category, amount]) => {
+                const percentage = ((amount / total) * 100).toFixed(1);
+                breakdownHtml += `<tr><td>${category}</td><td>$${amount.toFixed(2)}</td><td>${percentage}%</td></tr>`;
+            });
+            breakdownHtml += '</tbody></table>';
+            
+            document.getElementById('categoryBreakdown').innerHTML = breakdownHtml;
+        }
+
+        // History filters
+        function populateHistoryFilters() {
+            const categories = [...new Set(expensesData.map(e => e.category))].sort();
+            const categorySelect = document.getElementById('historyCategory');
+            const currentValue = categorySelect.value;
+            
+            categorySelect.innerHTML = '<option value="">All Categories</option>';
+            categories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat;
+                categorySelect.appendChild(option);
+            });
+            categorySelect.value = currentValue;
+        }
+
+        function applyHistoryFilters() {
+            const startDate = document.getElementById('historyStartDate').value;
+            const endDate = document.getElementById('historyEndDate').value;
+            const category = document.getElementById('historyCategory').value;
+            const payment = document.getElementById('historyPayment').value;
+            const expenseType = document.getElementById('historyExpenseType').value;
+
+            let filtered = expensesData;
+
+            if (startDate) filtered = filtered.filter(e => e.date >= startDate);
+            if (endDate) filtered = filtered.filter(e => e.date <= endDate);
+            if (category) filtered = filtered.filter(e => e.category === category);
+            if (payment) filtered = filtered.filter(e => e.paymentMethod === payment);
+            if (expenseType) filtered = filtered.filter(e => e.expenseType === expenseType);
+
+            displayHistory(filtered);
+        }
+
+        function clearHistoryFilters() {
+            document.getElementById('historyStartDate').value = '';
+            document.getElementById('historyEndDate').value = '';
+            document.getElementById('historyCategory').value = '';
+            document.getElementById('historyPayment').value = '';
+            document.getElementById('historyExpenseType').value = '';
+            applyHistoryFilters();
+        }
+
+        function displayHistory(data) {
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Type</th><th>Item</th><th>Category</th><th>Location</th><th>Cost</th><th>Payment</th><th>Actions</th></tr></thead><tbody>';
+            
+            data.forEach(expense => {
+                const badge = `<span class="expense-badge ${expense.expenseType}">${expense.expenseType === 'personal' ? '👤' : '💼'}</span>`;
+                html += `
+                    <tr>
+                        <td>${expense.date}</td>
+                        <td>${badge}</td>
+                        <td>${expense.item}</td>
+                        <td>${expense.category}</td>
+                        <td>${expense.location || '-'}</td>
+                        <td>$${expense.cost.toFixed(2)}</td>
+                        <td>${expense.paymentMethod}</td>
+                        <td>
+                            <button onclick="editExpense('${expense.id}')" style="background: #4285f4; margin-right: 0.5rem;">Edit</button>
+                            <button onclick="deleteExpense('${expense.id}')" class="danger">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            
+            if (data.length === 0) {
+                html = '<p style="text-align: center; padding: 2rem; color: var(--secondary);">No expenses found matching your filters.</p>';
+            }
+            
+            document.getElementById('historyTableContainer').innerHTML = html;
+        }
+
+        // CSV Import
+        function importCSV() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.csv';
+            input.onchange = async function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const confirmImport = confirm(`Import CSV file "${file.name}"?\n\nThis will add all entries from the CSV to Firebase.`);
+                if (!confirmImport) return;
+                
+                updateSyncStatus('syncing', 'Importing CSV...');
+                
+                const reader = new FileReader();
+                reader.onload = async function(event) {
+                    try {
+                        const text = event.target.result;
+                        const lines = text.split('\n');
+                        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+                        
+                        let importCount = 0;
+                        
+                        for (let i = 1; i < lines.length; i++) {
+                            if (!lines[i].trim()) continue;
+                            
+                            const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+                            
+                            if (values.length < 7) continue;
+                            
+                            const expense = {
+                                date: values[1],
+                                item: values[2],
+                                cost: parseFloat(values[3].replace('$', '')),
+                                location: values[4] || '',
+                                category: values[5],
+                                paymentMethod: values[6],
+                                expenseType: businessCategories.includes(values[5]) ? 'business' : 'personal',
+                                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                            };
+                            
+                            await expensesCollection.add(expense);
+                            importCount++;
+                            
+                            updateSyncStatus('syncing', `Importing... ${importCount}/${lines.length - 1}`);
+                        }
+                        
+                        updateSyncStatus('', 'Synced');
+                        alert(`Import complete! ${importCount} expenses imported.`);
+                        
+                        await loadDataFromFirebase();
+                        
+                    } catch (error) {
+                        console.error('Import error:', error);
+                        updateSyncStatus('offline', 'Import failed');
+                        alert('Error importing CSV: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        // CSV Export
+        function exportCSV() {
+            let csv = 'ExpenseID,Date,Item,Cost,Location,Category,PaymentMethod,ExpenseType,Timestamp\n';
+            
+            expensesData.forEach(expense => {
+                const row = [
+                    expense.id,
+                    expense.date,
+                    `"${expense.item}"`,
+                    `$${expense.cost.toFixed(2)}`,
+                    `"${expense.location || ''}"`,
+                    expense.category,
+                    expense.paymentMethod,
+                    expense.expenseType,
+                    new Date().toISOString()
+                ];
+                csv += row.join(',') + '\n';
+            });
+
+            const blob = new Blob([csv], {type: 'text/csv'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `expenses-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Clear all data
+        async function clearAllData() {
+            if (!confirm('⚠️ WARNING: This will delete ALL your expense data from Firebase!\n\nAre you absolutely sure?')) {
+                return;
+            }
+            
+            if (!confirm('This cannot be undone! Have you exported your data?\n\nClick OK to permanently delete everything.')) {
+                return;
+            }
+            
+            try {
+                console.log('Starting to clear all data...');
+                const snapshot = await expensesCollection.get();
+                console.log(`Found ${snapshot.size} expenses to delete`);
+                
+                const batch = db.batch();
+                snapshot.docs.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+                
+                await batch.commit();
+                console.log('All data deleted from Firebase');
+                
+                expensesData = [];
+                updateEntriesCount();
+                
+                alert('✅ All data cleared from Firebase! (' + snapshot.size + ' expenses deleted)');
+            } catch (error) {
+                console.error('Error clearing data:', error);
+                alert('❌ Error clearing data: ' + error.message);
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Set date to today
+            document.getElementById('date').value = new Date().toISOString().split('T')[0];
+            
+            // Load data from Firebase
+            await loadDataFromFirebase();
+        });
+    </script>
+</body>
+</html>
