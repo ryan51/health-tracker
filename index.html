@@ -59,6 +59,78 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     
     <style>
+        /* Helvetica Neue Display Font Family */
+        
+        /* Hairline - 100 */
+        @font-face {
+            font-family: 'Helvetica Neue Display';
+            src: url('/fonts/HelveticaNowDisplay-Hairline.woff2') format('woff2'),
+                 url('/fonts/HelveticaNowDisplay-Hairline.woff') format('woff');
+            font-weight: 100;
+            font-style: normal;
+            font-display: swap;
+        }
+        
+        /* Thin - 200 */
+        @font-face {
+            font-family: 'Helvetica Neue Display';
+            src: url('/fonts/HelveticaNowDisplay-Thin.woff2') format('woff2'),
+                 url('/fonts/HelveticaNowDisplay-Thin.woff') format('woff');
+            font-weight: 200;
+            font-style: normal;
+            font-display: swap;
+        }
+        
+        /* Light - 300 */
+        @font-face {
+            font-family: 'Helvetica Neue Display';
+            src: url('/fonts/HelveticaNowDisplay-Light.woff2') format('woff2'),
+                 url('/fonts/HelveticaNowDisplay-Light.woff') format('woff');
+            font-weight: 300;
+            font-style: normal;
+            font-display: swap;
+        }
+        
+        /* Regular - 400 */
+        @font-face {
+            font-family: 'Helvetica Neue Display';
+            src: url('/fonts/HelveticaNowDisplay-Regular.woff2') format('woff2'),
+                 url('/fonts/HelveticaNowDisplay-Regular.woff') format('woff');
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+        
+        /* Medium - 500 */
+        @font-face {
+            font-family: 'Helvetica Neue Display';
+            src: url('/fonts/HelveticaNowDisplay-Medita.woff2') format('woff2'),
+                 url('/fonts/HelveticaNowDisplay-Medita.woff') format('woff');
+            font-weight: 500;
+            font-style: normal;
+            font-display: swap;
+        }
+        
+        /* Bold - 700 */
+        @font-face {
+            font-family: 'Helvetica Neue Display';
+            src: url('/fonts/HelveticaNowDisplay-Bold.woff2') format('woff2'),
+                 url('/fonts/HelveticaNowDisplay-Bold.woff') format('woff');
+            font-weight: 700;
+            font-style: normal;
+            font-display: swap;
+        }
+        
+        /* Black - 900 */
+        @font-face {
+            font-family: 'Helvetica Neue Display';
+            src: url('/fonts/HelveticaNowDisplay-Black.woff2') format('woff2'),
+                 url('/fonts/HelveticaNowDisplay-Black.woff') format('woff');
+            font-weight: 900;
+            font-style: normal;
+            font-display: swap;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -78,7 +150,7 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Helvetica Neue Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: var(--surface);
             color: var(--text);
             line-height: 1.6;
@@ -599,6 +671,7 @@
                 <button onclick="showView('energy')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">⚡ Energy</button>
                 <button onclick="showView('agitation')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😤 Agitation</button>
                 <button onclick="showView('anxiety')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😰 Anxiety</button>
+                <button onclick="showView('depression')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😔 Depression</button>
                 <button onclick="showView('notes')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📝 Notes</button>
                 <button onclick="showView('history')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📋 History</button>
             </div>
@@ -875,15 +948,17 @@
             </div>
 
             <div class="form-section">
-                <h3>Energy & Agitation Tracking</h3>
+                <h3>Energy, Agitation, Anxiety & Depression Tracking</h3>
                 <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
                     <button onclick="logEnergy()">⚡ Log Current Energy</button>
                     <button onclick="logAgitation()" style="background: #f59e0b;">😤 Log Current Agitation</button>
                     <button onclick="logAnxiety()" style="background: #8b5cf6;">😰 Log Current Anxiety</button>
+                    <button onclick="logDepression()" style="background: #6366f1;">😔 Log Current Depression</button>
                 </div>
                 <div id="energyLog" class="energy-log"></div>
                 <div id="agitationLog" class="energy-log" style="margin-top: 1rem;"></div>
                 <div id="anxietyLog" class="energy-log" style="margin-top: 1rem;"></div>
+                <div id="depressionLog" class="energy-log" style="margin-top: 1rem;"></div>
             </div>
 
             <div class="form-section">
@@ -1157,6 +1232,39 @@
             </div>
         </div>
 
+        <div id="depressionView" class="view">
+            <button onclick="showView('settings')" class="secondary" style="margin-bottom: 1rem;">← Back to Settings</button>
+            
+            <!-- Sub-navigation for Settings sections -->
+            <div style="display: flex; gap: 0.5rem; margin: 1rem 0; padding: 0.5rem; background: white; border-radius: 2px; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); overflow-x: auto;">
+                <button onclick="showView('settings')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">⚙️ Settings</button>
+                <button onclick="showView('energy')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">⚡ Energy</button>
+                <button onclick="showView('agitation')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😤 Agitation</button>
+                <button onclick="showView('anxiety')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😰 Anxiety</button>
+                <button onclick="showView('depression')" style="padding: 0.75rem 1.25rem; background: var(--primary); color: white; border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😔 Depression</button>
+                <button onclick="showView('notes')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📝 Notes</button>
+                <button onclick="showView('history')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📋 History</button>
+            </div>
+            
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <h2 style="margin: 0;">😔 Depression Tracking for</h2>
+                    <input type="date" id="depressionDatePicker" onchange="changeDepressionDate()" style="padding: 0.5rem; border: 2px solid #6366f1; border-radius: 2px; font-size: 1rem; cursor: pointer;">
+                </div>
+                <button onclick="logDepressionForDate()" style="padding: 0.75rem 1.5rem; background: #6366f1; color: white; border: none; border-radius: 2px; font-weight: 600; cursor: pointer;">😔 Log Depression Now</button>
+            </div>
+            
+            <div style="background: white; border-radius: 2px; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);">
+                <h3 style="margin-top: 0;">Depression Logs for <span id="depressionDateDisplay">Today</span></h3>
+                <div id="depressionLogsForDate"></div>
+            </div>
+            
+            <div style="background: white; border-radius: 2px; padding: 2rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);">
+                <h3 style="margin-top: 0;">📊 All Depression History</h3>
+                <div id="depressionHistoryView"></div>
+            </div>
+        </div>
+
                 <div id="notesView" class="view">
             <button onclick="showView('settings')" class="secondary" style="margin-bottom: 1rem;">← Back to Settings</button>
             
@@ -1353,6 +1461,8 @@
                     agitation: getCurrentAgitationLog(),
                     // Anxiety
                     anxiety: getCurrentAnxietyLog(),
+                    // Depression
+                    depression: getCurrentDepressionLog(),
                     // Notes
                     notes: document.getElementById('notes').value,
                     // Media
@@ -1481,6 +1591,7 @@
                 document.getElementById('lightheadedValue').textContent = entry.lightheaded || 0;
                 displayAgitationLog(entry.agitation || []);
                 displayAnxietyLog(entry.anxiety || []);
+                displayDepressionLog(entry.depression || []);
                 document.getElementById('depressed').value = entry.depressed || 0;
                 document.getElementById('depressedValue').textContent = entry.depressed || 0;
                 document.getElementById('stomach').value = entry.stomach || 0;
@@ -1528,6 +1639,7 @@
             document.getElementById('energyLog').innerHTML = '';
             document.getElementById('agitationLog').innerHTML = '';
             document.getElementById('anxietyLog').innerHTML = '';
+            document.getElementById('depressionLog').innerHTML = '';
         }
 
         // Calculate fasting
@@ -2135,6 +2247,7 @@
 
         // Anxiety tracking with date selection (includes notes)
         let selectedAnxietyDate = getLocalDateString();
+        let selectedDepressionDate = getLocalDateString();
         
         function changeAnxietyDate() {
             const picker = document.getElementById('anxietyDatePicker');
@@ -2248,6 +2361,11 @@
         function getCurrentAnxietyLog() {
             const entry = healthData.find(e => e.date === currentDate);
             return entry ? (entry.anxiety || []) : [];
+        }
+        
+        function getCurrentDepressionLog() {
+            const entry = healthData.find(e => e.date === currentDate);
+            return entry ? (entry.depression || []) : [];
         }
         
         function displayAnxietyLog(log) {
@@ -2405,6 +2523,241 @@
             container.innerHTML = html || '<p style="text-align: center; color: var(--secondary); padding: 2rem;">No anxiety logs yet</p>';
                 }
         
+        // DEPRESSION LOGGING FUNCTIONS
+        // ============================================
+        
+        function changeDepressionDate() {
+            const picker = document.getElementById('depressionDatePicker');
+            if (picker && picker.value) {
+                selectedDepressionDate = picker.value;
+                loadDepressionLogsForDate();
+            }
+        }
+        
+        function logDepression() {
+            const level = prompt('Enter depression level (0-10):');
+            if (level !== null && level >= 0 && level <= 10) {
+                const note = prompt('Add a note (optional):');
+                const time = new Date().toLocaleTimeString();
+                
+                let entry = healthData.find(e => e.date === currentDate);
+                if (!entry) {
+                    entry = { date: currentDate, depression: [] };
+                    healthData.push(entry);
+                }
+                
+                if (!entry.depression) {
+                    entry.depression = [];
+                }
+                
+                entry.depression.push({ time, level: parseInt(level), note: note || '' });
+                displayDepressionLog(entry.depression);
+                saveEntry();
+            }
+        }
+        
+        function logDepressionForDate() {
+            const level = prompt('Enter depression level (0-10):');
+            if (level !== null && level >= 0 && level <= 10) {
+                const note = prompt('Add a note (optional):');
+                const time = new Date().toLocaleTimeString();
+                
+                let entry = healthData.find(e => e.date === selectedDepressionDate);
+                
+                if (!entry) {
+                    alert('No daily entry exists for this date. Please create a daily entry first.');
+                    return;
+                }
+                
+                if (!entry.depression) {
+                    entry.depression = [];
+                }
+                
+                entry.depression.push({ time, level: parseInt(level), note: note || '' });
+                saveDepressionToFirebase(entry);
+                loadDepressionLogsForDate();
+                loadDepressionHistory();
+            }
+        }
+        
+        async function saveDepressionToFirebase(entry) {
+            try {
+                updateSyncStatus('syncing', 'Saving depression log...');
+                
+                if (!entry.id) {
+                    alert('Cannot save - entry not found in Firebase');
+                    return;
+                }
+                
+                const docSnapshot = await healthCollection.doc(entry.id).get();
+                if (!docSnapshot.exists) {
+                    alert('Entry no longer exists in Firebase');
+                    return;
+                }
+                
+                await healthCollection.doc(entry.id).update({
+                    depression: entry.depression
+                });
+                
+                await loadDataFromFirebase();
+                updateSyncStatus('', 'Synced');
+                
+            } catch (error) {
+                console.error('Error saving depression:', error);
+                updateSyncStatus('offline', 'Save error');
+                alert('Error saving depression: ' + error.message);
+            }
+        }
+        
+        function displayDepressionLog(log) {
+            const container = document.getElementById('depressionLog');
+            container.innerHTML = '';
+            
+            if (log.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--secondary);">No depression logs yet today</p>';
+                return;
+            }
+
+            log.forEach((entry, index) => {
+                const div = document.createElement('div');
+                div.className = 'energy-entry';
+                div.innerHTML = `
+                    <div>
+                        <span style="font-weight: 600;">${entry.time}</span>
+                        <span style="font-weight: 600; color: #6366f1; margin-left: 1rem;">Level: ${entry.level}/10</span>
+                        ${entry.note ? `<div style="font-size: 0.875rem; color: var(--secondary); margin-top: 0.25rem;">${entry.note}</div>` : ''}
+                    </div>
+                    <button onclick="deleteDepressionLogDaily(${index})">Delete</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        function deleteDepressionLogDaily(index) {
+            const entry = healthData.find(e => e.date === currentDate);
+            if (entry && entry.depression) {
+                entry.depression.splice(index, 1);
+                displayDepressionLog(entry.depression);
+                saveEntry();
+            }
+        }
+        
+        function loadDepressionLogsForDate() {
+            const container = document.getElementById('depressionLogsForDate');
+            const dateDisplay = document.getElementById('depressionDateDisplay');
+            const entry = healthData.find(e => e.date === selectedDepressionDate);
+            
+            dateDisplay.textContent = new Date(selectedDepressionDate + 'T00:00:00').toLocaleDateString('en-US', { 
+                weekday: 'short', 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric' 
+            });
+            
+            if (!entry || !entry.depression || entry.depression.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--secondary); padding: 2rem;">No depression logs for this date</p>';
+                return;
+            }
+            
+            let html = '';
+            entry.depression.forEach((log, index) => {
+                html += `<div style="padding: 1rem; background: var(--surface); border-radius: 2px; margin-bottom: 0.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span style="font-weight: 600;">${log.time}</span>
+                            <span style="font-weight: 600; color: #6366f1; margin-left: 1rem;">Level: ${log.level}/10</span>
+                            ${log.note ? `<div style="font-size: 0.875rem; color: var(--secondary); margin-top: 0.5rem;">${log.note}</div>` : ''}
+                        </div>
+                    </div>
+                </div>`;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        function editDepressionLog(date, index, oldTime, oldLevel, oldNote) {
+            const newLevel = prompt('Edit depression level (0-10):', oldLevel);
+            if (newLevel === null) return;
+            
+            if (newLevel < 0 || newLevel > 10) {
+                alert('Level must be between 0 and 10');
+                return;
+            }
+            
+            const newNote = prompt('Edit note:', oldNote);
+            if (newNote === null) return;
+            
+            const entry = healthData.find(e => e.date === date);
+            if (entry && entry.depression && entry.depression[index]) {
+                entry.depression[index].level = parseInt(newLevel);
+                entry.depression[index].note = newNote;
+                
+                saveDepressionToFirebase(entry);
+                loadDepressionLogsForDate();
+                loadDepressionHistory();
+            }
+        }
+        
+        async function deleteDepressionLog(date, index) {
+            if (!confirm('Delete this depression log?')) return;
+            
+            const entry = healthData.find(e => e.date === date);
+            if (entry && entry.depression) {
+                entry.depression.splice(index, 1);
+                
+                await saveDepressionToFirebase(entry);
+                loadDepressionLogsForDate();
+                loadDepressionHistory();
+            }
+        }
+        
+        function loadDepressionHistory() {
+            const container = document.getElementById('depressionHistoryView');
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Time</th><th>Level</th><th>Note</th><th>Actions</th></tr></thead><tbody>';
+            
+            const allLogs = [];
+            healthData.forEach(entry => {
+                if (entry.depression && entry.depression.length > 0) {
+                    entry.depression.forEach((log, index) => {
+                        allLogs.push({
+                            date: entry.date,
+                            index: index,
+                            time: log.time,
+                            level: log.level,
+                            note: log.note || ''
+                        });
+                    });
+                }
+            });
+            
+            allLogs.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            allLogs.forEach(log => {
+                html += `<tr>
+                    <td>${log.date}</td>
+                    <td>${log.time}</td>
+                    <td style="font-weight: 600; color: #6366f1;">${log.level}/10</td>
+                    <td>${log.note}</td>
+                    <td>
+                        <button onclick="editDepressionLog('${log.date}', ${log.index}, '${log.time}', ${log.level}, '${log.note.replace(/'/g, "\\'")}')" 
+                                style="padding: 0.25rem 0.75rem; background: var(--primary); color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 0.875rem; margin-right: 0.25rem;">
+                            Edit
+                        </button>
+                        <button onclick="deleteDepressionLog('${log.date}', ${log.index})" 
+                                style="padding: 0.25rem 0.75rem; background: var(--danger); color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 0.875rem;">
+                            Delete
+                        </button>
+                    </td>
+                </tr>`;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html || '<p style="text-align: center; color: var(--secondary); padding: 2rem;">No depression logs yet</p>';
+        }
+        
+
+        // View switching
+
         // View switching
         function showView(viewName) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -2465,6 +2818,14 @@
                     }
                     loadAnxietyLogsForDate();
                     loadAnxietyHistory(); 
+                    break;
+                case 'depression': 
+                    const depressionPicker = document.getElementById('depressionDatePicker');
+                    if (depressionPicker) {
+                        depressionPicker.value = selectedDepressionDate;
+                    }
+                    loadDepressionLogsForDate();
+                    loadDepressionHistory(); 
                     break;
                 case 'notes': loadNotesHistory(); break;
                 case 'media': loadMediaHistory(); break;
