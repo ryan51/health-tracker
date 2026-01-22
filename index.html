@@ -422,6 +422,18 @@
             font-size: 0.875rem;
         }
 
+        /* Mobile-friendly modal */
+        @media (max-width: 768px) {
+            #editWorkoutModal {
+                padding: 0 !important;
+            }
+            #editWorkoutModal > div {
+                margin: 0 !important;
+                border-radius: 0 !important;
+                min-height: 100vh !important;
+            }
+        }
+        
         .history-table {
             width: 100%;
             border-collapse: collapse;
@@ -672,6 +684,7 @@
                 <button onclick="showView('agitation')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😤 Agitation</button>
                 <button onclick="showView('anxiety')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😰 Anxiety</button>
                 <button onclick="showView('depression')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😔 Depression</button>
+                <button onclick="showView('weightsHistory')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">🏋️ Weights</button>
                 <button onclick="showView('notes')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📝 Notes</button>
                 <button onclick="showView('history')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📋 History</button>
             </div>
@@ -844,27 +857,43 @@
                         <label>Fasting Hours (auto-calc)</label>
                         <input type="text" id="fasting" readonly>
                     </div>
-                                        <div class="form-group">
+                    <div class="form-group">
                         <label for="water">Water (oz)</label>
-                        <input type="range" id="water" min="0" max="80" value="0" style="width: 100%;"><span id="waterDisplay" style="margin-left: 0.5rem; font-weight: 600;">0 oz</span>
+                        <div class="number-input-group">
+                            <button type="button" onclick="adjustDiet('water', -8)">−</button>
+                            <input type="number" id="water" min="0" max="200" step="8" value="0">
+                            <button type="button" onclick="adjustDiet('water', 8)">+</button>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="protein">Protein (g)</label>
-                        <input type="range" id="protein" min="0" max="160" value="0" style="width: 100%;"><span id="proteinDisplay" style="margin-left: 0.5rem; font-weight: 600;">0 g</span>
+                        <div class="number-input-group">
+                            <button type="button" onclick="adjustDiet('protein', -10)">−</button>
+                            <input type="number" id="protein" min="0" max="300" step="10" value="0">
+                            <button type="button" onclick="adjustDiet('protein', 10)">+</button>
+                        </div>
                     </div>
                     <div class="checkbox-group">
                         <input type="checkbox" id="carbs">
                         <label for="carbs">Carbs (&lt;50g)</label>
                     </div>
                     <div class="form-group">
-                        <label for="alcohol">Alcohol (0-10): <span id="alcoholValue">0</span></label>
-                        <input type="range" id="alcohol" min="0" max="10" value="0" oninput="document.getElementById('alcoholValue').textContent = this.value">
-                    
+                        <label for="alcohol">Alcohol (0-10)</label>
+                        <div class="number-input-group">
+                            <button type="button" onclick="adjustDiet('alcohol', -1)">−</button>
+                            <input type="number" id="alcohol" min="0" max="10" step="1" value="0">
+                            <button type="button" onclick="adjustDiet('alcohol', 1)">+</button>
+                        </div>
                     </div>
 
-                    <div>
-                        <label>Nicotine (0-6): <span id="nicotineDisplay" style="font-weight: 600;">0</span></label>
-                        <input type="range" id="nicotine" min="0" max="6" value="0" oninput="document.getElementById('nicotineDisplay').textContent = this.value"></div>
+                    <div class="form-group">
+                        <label for="nicotine">Nicotine (0-6)</label>
+                        <div class="number-input-group">
+                            <button type="button" onclick="adjustDiet('nicotine', -1)">−</button>
+                            <input type="number" id="nicotine" min="0" max="6" step="1" value="0">
+                            <button type="button" onclick="adjustDiet('nicotine', 1)">+</button>
+                        </div>
+                    </div>
                     <div class="checkbox-group">
                         <input type="checkbox" id="cheatMeal">
                         <label for="cheatMeal">Cheat Meal</label>
@@ -924,25 +953,37 @@
                 <h3>Ailments (0-10 Scale)</h3>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label for="headache">Headache: <span id="headacheValue">0</span></label>
-                        <input type="range" id="headache" min="0" max="10" value="0" oninput="document.getElementById('headacheValue').textContent = this.value">
+                        <label for="headache">Headache</label>
+                        <div class="number-input-group">
+                            <button type="button" onclick="adjustAilment('headache', -1)">−</button>
+                            <input type="number" id="headache" min="0" max="10" step="1" value="0">
+                            <button type="button" onclick="adjustAilment('headache', 1)">+</button>
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label for="lightheaded">Lightheaded: <span id="lightheadedValue">0</span></label>
-                        <input type="range" id="lightheaded" min="0" max="10" value="0" oninput="document.getElementById('lightheadedValue').textContent = this.value">
+                        <label for="lightheaded">Lightheaded</label>
+                        <div class="number-input-group">
+                            <button type="button" onclick="adjustAilment('lightheaded', -1)">−</button>
+                            <input type="number" id="lightheaded" min="0" max="10" step="1" value="0">
+                            <button type="button" onclick="adjustAilment('lightheaded', 1)">+</button>
+                        </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="depressed">Depressed: <span id="depressedValue">0</span></label>
-                        <input type="range" id="depressed" min="0" max="10" value="0" oninput="document.getElementById('depressedValue').textContent = this.value">
+                        <label for="stomach">Stomach</label>
+                        <div class="number-input-group">
+                            <button type="button" onclick="adjustAilment('stomach', -1)">−</button>
+                            <input type="number" id="stomach" min="0" max="10" step="1" value="0">
+                            <button type="button" onclick="adjustAilment('stomach', 1)">+</button>
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label for="stomach">Stomach: <span id="stomachValue">0</span></label>
-                        <input type="range" id="stomach" min="0" max="10" value="0" oninput="document.getElementById('stomachValue').textContent = this.value">
-                    </div>
-                    <div class="form-group">
-                        <label for="sinuses">Sinuses: <span id="sinusesValue">0</span></label>
-                        <input type="range" id="sinuses" min="0" max="10" value="0" oninput="document.getElementById('sinusesValue').textContent = this.value">
+                        <label for="sinuses">Sinuses</label>
+                        <div class="number-input-group">
+                            <button type="button" onclick="adjustAilment('sinuses', -1)">−</button>
+                            <input type="number" id="sinuses" min="0" max="10" step="1" value="0">
+                            <button type="button" onclick="adjustAilment('sinuses', 1)">+</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -955,10 +996,10 @@
                     <button onclick="logAnxiety()" style="background: #8b5cf6;">😰 Log Current Anxiety</button>
                     <button onclick="logDepression()" style="background: #6366f1;">😔 Log Current Depression</button>
                 </div>
-                <div id="energyLog" class="energy-log"></div>
-                <div id="agitationLog" class="energy-log" style="margin-top: 1rem;"></div>
-                <div id="anxietyLog" class="energy-log" style="margin-top: 1rem;"></div>
-                <div id="depressionLog" class="energy-log" style="margin-top: 1rem;"></div>
+                <div id="energyLog" class="energy-log" style="display: none;"></div>
+                <div id="agitationLog" class="energy-log" style="display: none;"></div>
+                <div id="anxietyLog" class="energy-log" style="display: none;"></div>
+                <div id="depressionLog" class="energy-log" style="display: none;"></div>
             </div>
 
             <div class="form-section">
@@ -1262,6 +1303,58 @@
             <div style="background: white; border-radius: 2px; padding: 2rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);">
                 <h3 style="margin-top: 0;">📊 All Depression History</h3>
                 <div id="depressionHistoryView"></div>
+            </div>
+        </div>
+
+        <div id="weightsHistoryView" class="view">
+            <button onclick="showView('settings')" class="secondary" style="margin-bottom: 1rem;">← Back to Settings</button>
+            
+            <!-- Sub-navigation for Settings sections -->
+            <div style="display: flex; gap: 0.5rem; margin: 1rem 0; padding: 0.5rem; background: white; border-radius: 2px; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); overflow-x: auto;">
+                <button onclick="showView('settings')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">⚙️ Settings</button>
+                <button onclick="showView('energy')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">⚡ Energy</button>
+                <button onclick="showView('agitation')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😤 Agitation</button>
+                <button onclick="showView('anxiety')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😰 Anxiety</button>
+                <button onclick="showView('depression')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😔 Depression</button>
+                <button onclick="showView('weightsHistory')" style="padding: 0.75rem 1.25rem; background: var(--primary); color: white; border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">🏋️ Weights</button>
+                <button onclick="showView('notes')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📝 Notes</button>
+                <button onclick="showView('history')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📋 History</button>
+            </div>
+            
+            <div style="background: white; border-radius: 2px; padding: 2rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);">
+                <h3 style="margin-top: 0;">🏋️ All Workout History</h3>
+                <div id="weightsHistoryTable"></div>
+            </div>
+        </div>
+
+        <!-- Edit Workout Modal -->
+        <div id="editWorkoutModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; overflow-y: auto; padding: 1rem;">
+            <div style="max-width: 800px; margin: 0 auto; background: white; border-radius: 12px; padding: 1.5rem; position: relative; min-height: 100%; box-sizing: border-box;">
+                <button onclick="closeEditWorkoutModal()" style="position: absolute; top: 1rem; right: 1rem; background: transparent; border: none; font-size: 1.5rem; cursor: pointer; color: var(--secondary);">✕</button>
+                
+                <h2 style="margin-top: 0; margin-bottom: 1.5rem;">Edit Workout for <span id="editWorkoutDate"></span></h2>
+                
+                <!-- Action Buttons at Top -->
+                <div style="margin-bottom: 2rem; display: flex; gap: 1rem;">
+                    <button onclick="saveEditedWorkout()" style="flex: 1; padding: 1rem; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">💾 Save Changes</button>
+                    <button onclick="closeEditWorkoutModal()" style="flex: 1; padding: 1rem; border-radius: 8px; font-weight: 600; cursor: pointer; background: #6c757d; color: white; border: none;">Cancel</button>
+                </div>
+                
+                <!-- Workout Name -->
+                <div style="margin-bottom: 2rem; padding: 1.5rem; background: var(--surface); border-radius: 8px;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Workout Name</label>
+                    <input type="text" id="editWorkoutName" placeholder="e.g., Push Day, FB-01-25, Leg Day..." 
+                           style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem;">
+                </div>
+                
+                <!-- Exercises -->
+                <div id="editWorkoutExercises"></div>
+                
+                <!-- Action Buttons at Bottom -->
+                <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+                    <button onclick="saveEditedWorkout()" style="flex: 1; padding: 1rem; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">💾 Save Changes</button>
+                    <button onclick="closeEditWorkoutModal()" style="flex: 1; padding: 1rem; border-radius: 8px; font-weight: 600; cursor: pointer; background: #6c757d; color: white; border: none;">Cancel</button>
+                </div>
             </div>
         </div>
 
@@ -1741,6 +1834,33 @@
             newValue = Math.round(newValue * 2) / 2;
             
             input.value = newValue.toFixed(1);
+        }
+        
+        function adjustDiet(fieldId, amount) {
+            const input = document.getElementById(fieldId);
+            if (!input) return;
+            
+            let currentValue = parseFloat(input.value) || 0;
+            let newValue = currentValue + amount;
+            
+            const min = parseFloat(input.getAttribute('min')) || 0;
+            const max = parseFloat(input.getAttribute('max')) || 999;
+            
+            newValue = Math.max(min, Math.min(max, newValue));
+            
+            input.value = newValue;
+        }
+        
+        function adjustAilment(fieldId, amount) {
+            const input = document.getElementById(fieldId);
+            if (!input) return;
+            
+            let currentValue = parseInt(input.value) || 0;
+            let newValue = currentValue + amount;
+            
+            newValue = Math.max(0, Math.min(10, newValue));
+            
+            input.value = newValue;
         }
         
         function validateMediaInput(input) {
@@ -2756,10 +2876,213 @@
         }
         
 
+        
+        // ============================================
+        // WEIGHTS HISTORY FUNCTIONS
+        // ============================================
+        
+        let currentEditWorkoutDate = null;
+        
+        function loadWeightsHistory() {
+            const container = document.getElementById('weightsHistoryTable');
+            
+            // Group workouts by date
+            const workoutsByDate = {};
+            
+            allWorkouts.forEach(workout => {
+                if (!workoutsByDate[workout.date]) {
+                    workoutsByDate[workout.date] = {
+                        workouts: [],
+                        workoutName: workout.workoutName || null
+                    };
+                }
+                workoutsByDate[workout.date].workouts.push(workout);
+                // Get workout name from any workout on this date (they should all have the same name)
+                if (workout.workoutName && !workoutsByDate[workout.date].workoutName) {
+                    workoutsByDate[workout.date].workoutName = workout.workoutName;
+                }
+            });
+            
+            // Sort dates (newest first)
+            const sortedDates = Object.keys(workoutsByDate).sort((a, b) => new Date(b) - new Date(a));
+            
+            if (sortedDates.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--secondary); padding: 2rem;">No workouts logged yet</p>';
+                return;
+            }
+            
+            let html = '<table class="history-table" style="width: 100%;"><thead><tr><th>Date</th><th>Workout</th><th>Actions</th></tr></thead><tbody>';
+            
+            sortedDates.forEach(date => {
+                const dateData = workoutsByDate[date];
+                const workoutName = dateData.workoutName || 'Unnamed Workout';
+                
+                html += `<tr>
+                    <td style="font-weight: 600;">${date}</td>
+                    <td>${workoutName}</td>
+                    <td>
+                        <button onclick="openEditWorkoutModal('${date}')" 
+                                style="padding: 0.5rem 1rem; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                            Edit
+                        </button>
+                    </td>
+                </tr>`;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+        
+        function openEditWorkoutModal(date) {
+            console.log('Opening edit modal for date:', date);
+            console.log('All workouts:', allWorkouts);
+            
+            currentEditWorkoutDate = date;
+            
+            // Find workouts for this date
+            const workouts = allWorkouts.filter(w => w.date === date);
+            
+            console.log('Found workouts for this date:', workouts);
+            
+            if (workouts.length === 0) {
+                alert('No workouts found for this date');
+                return;
+            }
+            
+            // Set the date in the modal
+            document.getElementById('editWorkoutDate').textContent = date;
+            
+            // Build the exercise list
+            const container = document.getElementById('editWorkoutExercises');
+            let html = '';
+            
+            workouts.forEach((workout, index) => {
+                html += `
+                    <div style="background: var(--surface); padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem;">
+                        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                            <div>
+                                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Exercise Name</label>
+                                <input type="text" id="edit_exercise_${index}" value="${workout.exercise || ''}" 
+                                       style="width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Sets</label>
+                                <input type="number" id="edit_sets_${index}" value="${workout.sets || ''}" 
+                                       style="width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Reps</label>
+                                <input type="number" id="edit_reps_${index}" value="${workout.reps || ''}" 
+                                       style="width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Lbs</label>
+                                <input type="number" id="edit_weight_${index}" value="${workout.weight || ''}" 
+                                       style="width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px;">
+                            </div>
+                        </div>
+                        <div>
+                            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Notes</label>
+                            <textarea id="edit_notes_${index}" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px; min-height: 60px;">${workout.notes || ''}</textarea>
+                        </div>
+                        <button onclick="deleteExercise(${index})" style="margin-top: 0.5rem; padding: 0.5rem 1rem; background: var(--danger); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem;">Delete Exercise</button>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            
+            // Show the modal
+            document.getElementById('editWorkoutModal').style.display = 'block';
+            
+            // Set workout name AFTER modal is visible
+            const workoutName = workouts[0].workoutName || '';
+            document.getElementById('editWorkoutName').value = workoutName;
+        }
+        
+        function closeEditWorkoutModal() {
+            document.getElementById('editWorkoutModal').style.display = 'none';
+            currentEditWorkoutDate = null;
+        }
+        
+        async function saveEditedWorkout() {
+            if (!currentEditWorkoutDate) return;
+            
+            // Find workouts for this date
+            const workoutsForDate = allWorkouts.filter(w => w.date === currentEditWorkoutDate);
+            
+            if (workoutsForDate.length === 0) {
+                alert('No workouts found');
+                return;
+            }
+            
+            // Get workout name
+            const workoutName = document.getElementById('editWorkoutName')?.value || '';
+            
+            // Update each workout in Firebase
+            try {
+                updateSyncStatus('syncing', 'Saving workouts...');
+                
+                for (let index = 0; index < workoutsForDate.length; index++) {
+                    const workout = workoutsForDate[index];
+                    const exercise = document.getElementById(`edit_exercise_${index}`)?.value;
+                    const sets = document.getElementById(`edit_sets_${index}`)?.value;
+                    const reps = document.getElementById(`edit_reps_${index}`)?.value;
+                    const weight = document.getElementById(`edit_weight_${index}`)?.value;
+                    const notes = document.getElementById(`edit_notes_${index}`)?.value;
+                    
+                    // Update if exercise name exists
+                    if (exercise && workout.id) {
+                        await workoutsCollection.doc(workout.id).update({
+                            exercise,
+                            sets: parseInt(sets) || 0,
+                            reps: parseInt(reps) || 0,
+                            weight: parseFloat(weight) || 0,
+                            notes: notes || '',
+                            workoutName: workoutName
+                        });
+                    }
+                }
+                
+                // Reload workouts
+                await loadWorkoutsFromFirebase();
+                
+                updateSyncStatus('', 'Synced');
+                
+                closeEditWorkoutModal();
+                loadWeightsHistory();
+                
+                alert('Workouts updated successfully!');
+                
+            } catch (error) {
+                console.error('Error saving workouts:', error);
+                updateSyncStatus('offline', 'Save error');
+                alert('Error saving workouts: ' + error.message);
+            }
+        }
+        
+        async function deleteExercise(index) {
+            if (!confirm('Delete this exercise?')) return;
+            
+            const workoutsForDate = allWorkouts.filter(w => w.date === currentEditWorkoutDate);
+            const workoutToDelete = workoutsForDate[index];
+            
+            if (workoutToDelete && workoutToDelete.id) {
+                try {
+                    await workoutsCollection.doc(workoutToDelete.id).delete();
+                    await loadWorkoutsFromFirebase();
+                    openEditWorkoutModal(currentEditWorkoutDate);
+                } catch (error) {
+                    console.error('Error deleting exercise:', error);
+                    alert('Error deleting exercise: ' + error.message);
+                }
+            }
+        }
+                
         // View switching
 
         // View switching
-        function showView(viewName) {
+        async function showView(viewName) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.querySelectorAll('.nav-tabs button').forEach(b => b.classList.remove('active'));
             
@@ -2827,6 +3150,15 @@
                     loadDepressionLogsForDate();
                     loadDepressionHistory(); 
                     break;
+                case 'weightsHistory': 
+                    initWorkoutsCollection();
+                    // Wait a moment for workouts to load if needed
+                    if (allWorkouts.length === 0) {
+                        setTimeout(() => loadWeightsHistory(), 500);
+                    } else {
+                        loadWeightsHistory();
+                    }
+                    break;
                 case 'notes': loadNotesHistory(); break;
                 case 'media': loadMediaHistory(); break;
                 case 'history': loadCompleteHistory(); break;
@@ -2867,9 +3199,9 @@
 
         function loadDietHistory() {
             const container = document.getElementById('dietHistory');
-            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Weight</th><th>Diet</th><th>Water</th><th>Protein</th><th>Carbs</th><th>Fasting</th><th>Actions</th></tr></thead><tbody>';
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Weight</th><th>Diet</th><th>Water</th><th>Protein</th><th>Carbs</th><th>Alcohol</th><th>Nicotine</th><th>Fasting</th><th>Actions</th></tr></thead><tbody>';
             healthData.forEach(entry => {
-                html += `<tr><td>${entry.date}</td><td>${entry.weight || '-'}</td><td>${entry.diet || '-'}</td><td>${entry.water || '-'}</td><td>${entry.protein || '-'}</td><td>${entry.carbs || '-'}</td><td>${entry.fasting || '-'}</td><td><button onclick="editEntry('${entry.date}')" style="padding: 0.25rem 0.75rem; background: #4285f4; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 0.875rem;">Edit</button></td></tr>`;
+                html += `<tr><td>${entry.date}</td><td>${entry.weight || '-'}</td><td>${entry.diet || '-'}</td><td>${entry.water || '-'}</td><td>${entry.protein || '-'}</td><td>${entry.carbs ? '✓' : '-'}</td><td>${entry.alcohol || '0'}</td><td>${entry.nicotine || '0'}</td><td>${entry.fasting || '-'}</td><td><button onclick="editEntry('${entry.date}')" style="padding: 0.25rem 0.75rem; background: #4285f4; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 0.875rem;">Edit</button></td></tr>`;
             });
             html += '</tbody></table>';
             container.innerHTML = html;
@@ -3449,6 +3781,12 @@
                 });
                 
                 console.log(`Loaded ${allWorkouts.length} workouts`);
+                
+                // If we're on the weights history view, refresh it
+                const historyView = document.getElementById('weightsHistoryView');
+                if (historyView && historyView.classList.contains('active')) {
+                    loadWeightsHistory();
+                }
             } catch (error) {
                 console.error('Error loading workouts:', error);
             }
