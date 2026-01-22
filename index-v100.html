@@ -3035,7 +3035,7 @@
         // View switching
 
         // View switching
-        function showView(viewName) {
+        async function showView(viewName) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.querySelectorAll('.nav-tabs button').forEach(b => b.classList.remove('active'));
             
@@ -3104,7 +3104,13 @@
                     loadDepressionHistory(); 
                     break;
                 case 'weightsHistory': 
-                    loadWeightsHistory(); 
+                    initWorkoutsCollection();
+                    // Wait a moment for workouts to load if needed
+                    if (allWorkouts.length === 0) {
+                        setTimeout(() => loadWeightsHistory(), 500);
+                    } else {
+                        loadWeightsHistory();
+                    }
                     break;
                 case 'notes': loadNotesHistory(); break;
                 case 'media': loadMediaHistory(); break;
@@ -3728,6 +3734,12 @@
                 });
                 
                 console.log(`Loaded ${allWorkouts.length} workouts`);
+                
+                // If we're on the weights history view, refresh it
+                const historyView = document.getElementById('weightsHistoryView');
+                if (historyView && historyView.classList.contains('active')) {
+                    loadWeightsHistory();
+                }
             } catch (error) {
                 console.error('Error loading workouts:', error);
             }
