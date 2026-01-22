@@ -2859,14 +2859,14 @@
         function loadWeightsHistory() {
             const container = document.getElementById('weightsHistoryTable');
             
-            // Get all workout data grouped by date
+            // Group workouts by date
             const workoutsByDate = {};
             
-            // Loop through all health data to find workouts
-            healthData.forEach(entry => {
-                if (entry.workouts && entry.workouts.length > 0) {
-                    workoutsByDate[entry.date] = entry.workouts;
+            allWorkouts.forEach(workout => {
+                if (!workoutsByDate[workout.date]) {
+                    workoutsByDate[workout.date] = [];
                 }
+                workoutsByDate[workout.date].push(workout);
             });
             
             // Sort dates (newest first)
@@ -2902,10 +2902,10 @@
         function openEditWorkoutModal(date) {
             currentEditWorkoutDate = date;
             
-            // Find the entry for this date
-            const entry = healthData.find(e => e.date === date);
+            // Find workouts for this date
+            const workouts = allWorkouts.filter(w => w.date === date);
             
-            if (!entry || !entry.workouts) {
+            if (workouts.length === 0) {
                 alert('No workouts found for this date');
                 return;
             }
@@ -2917,7 +2917,7 @@
             const container = document.getElementById('editWorkoutExercises');
             let html = '';
             
-            entry.workouts.forEach((workout, index) => {
+            workouts.forEach((workout, index) => {
                 html += `
                     <div style="background: var(--surface); padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem;">
                         <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
@@ -2965,77 +2965,73 @@
         async function saveEditedWorkout() {
             if (!currentEditWorkoutDate) return;
             
-            const entry = healthData.find(e => e.date === currentEditWorkoutDate);
+            // Find workouts for this date
+            const workoutsForDate = allWorkouts.filter(w => w.date === currentEditWorkoutDate);
             
-            if (!entry) {
-                alert('Entry not found');
+            if (workoutsForDate.length === 0) {
+                alert('No workouts found');
                 return;
             }
             
-            // Gather updated workout data
-            const updatedWorkouts = [];
-            
-            entry.workouts.forEach((workout, index) => {
-                const exercise = document.getElementById(`edit_exercise_${index}`)?.value;
-                const sets = document.getElementById(`edit_sets_${index}`)?.value;
-                const reps = document.getElementById(`edit_reps_${index}`)?.value;
-                const weight = document.getElementById(`edit_weight_${index}`)?.value;
-                const notes = document.getElementById(`edit_notes_${index}`)?.value;
-                
-                // Only include if exercise name exists
-                if (exercise) {
-                    updatedWorkouts.push({
-                        exercise,
-                        sets: parseInt(sets) || 0,
-                        reps: parseInt(reps) || 0,
-                        weight: parseFloat(weight) || 0,
-                        notes: notes || '',
-                        timestamp: workout.timestamp || new Date().toISOString()
-                    });
-                }
-            });
-            
-            // Update Firebase
+            // Update each workout in Firebase
             try {
-                updateSyncStatus('syncing', 'Saving workout...');
+                updateSyncStatus('syncing', 'Saving workouts...');
                 
-                if (!entry.id) {
-                    alert('Cannot save - entry not found in Firebase');
-                    return;
+                for (let index = 0; index < workoutsForDate.length; index++) {
+                    const workout = workoutsForDate[index];
+                    const exercise = document.getElementById(`edit_exercise_${index}`)?.value;
+                    const sets = document.getElementById(`edit_sets_${index}`)?.value;
+                    const reps = document.getElementById(`edit_reps_${index}`)?.value;
+                    const weight = document.getElementById(`edit_weight_${index}`)?.value;
+                    const notes = document.getElementById(`edit_notes_${index}`)?.value;
+                    
+                    // Update if exercise name exists
+                    if (exercise && workout.id) {
+                        await workoutsCollection.doc(workout.id).update({
+                            exercise,
+                            sets: parseInt(sets) || 0,
+                            reps: parseInt(reps) || 0,
+                            weight: parseFloat(weight) || 0,
+                            notes: notes || ''
+                        });
+                    }
                 }
                 
-                await healthCollection.doc(entry.id).update({
-                    workouts: updatedWorkouts
-                });
-                
-                // Reload data
-                await loadDataFromFirebase();
+                // Reload workouts
+                await loadWorkoutsFromFirebase();
                 
                 updateSyncStatus('', 'Synced');
                 
                 closeEditWorkoutModal();
                 loadWeightsHistory();
                 
-                alert('Workout updated successfully!');
+                alert('Workouts updated successfully!');
                 
             } catch (error) {
-                console.error('Error saving workout:', error);
+                console.error('Error saving workouts:', error);
                 updateSyncStatus('offline', 'Save error');
-                alert('Error saving workout: ' + error.message);
+                alert('Error saving workouts: ' + error.message);
             }
         }
         
-        function deleteExercise(index) {
+        async function deleteExercise(index) {
             if (!confirm('Delete this exercise?')) return;
             
-            const entry = healthData.find(e => e.date === currentEditWorkoutDate);
+            const workoutsForDate = allWorkouts.filter(w => w.date === currentEditWorkoutDate);
+            const workoutToDelete = workoutsForDate[index];
             
-            if (entry && entry.workouts) {
-                entry.workouts.splice(index, 1);
-                openEditWorkoutModal(currentEditWorkoutDate);
+            if (workoutToDelete && workoutToDelete.id) {
+                try {
+                    await workoutsCollection.doc(workoutToDelete.id).delete();
+                    await loadWorkoutsFromFirebase();
+                    openEditWorkoutModal(currentEditWorkoutDate);
+                } catch (error) {
+                    console.error('Error deleting exercise:', error);
+                    alert('Error deleting exercise: ' + error.message);
+                }
             }
         }
-        
+                
         // View switching
 
         // View switching
