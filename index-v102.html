@@ -2939,10 +2939,6 @@
             // Set the date in the modal
             document.getElementById('editWorkoutDate').textContent = date;
             
-            // Load workout name (all workouts on this date should have the same name)
-            const workoutName = workouts[0].workoutName || '';
-            document.getElementById('editWorkoutName').value = workoutName;
-            
             // Build the exercise list
             const container = document.getElementById('editWorkoutExercises');
             let html = '';
@@ -2985,6 +2981,10 @@
             
             // Show the modal
             document.getElementById('editWorkoutModal').style.display = 'block';
+            
+            // Set workout name AFTER modal is visible
+            const workoutName = workouts[0].workoutName || '';
+            document.getElementById('editWorkoutName').value = workoutName;
         }
         
         function closeEditWorkoutModal() {
