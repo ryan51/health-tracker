@@ -1545,7 +1545,6 @@
                     headache: document.getElementById('headache').value,
                     lightheaded: document.getElementById('lightheaded').value,
 
-                    depressed: document.getElementById('depressed').value,
                     stomach: document.getElementById('stomach').value,
                     sinuses: document.getElementById('sinuses').value,
                     // Energy
@@ -1685,10 +1684,7 @@
                 displayAgitationLog(entry.agitation || []);
                 displayAnxietyLog(entry.anxiety || []);
                 displayDepressionLog(entry.depression || []);
-                document.getElementById('depressed').value = entry.depressed || 0;
-                document.getElementById('depressedValue').textContent = entry.depressed || 0;
                 document.getElementById('stomach').value = entry.stomach || 0;
-                document.getElementById('stomachValue').textContent = entry.stomach || 0;
                 document.getElementById('sinuses').value = entry.sinuses || 0;
                 document.getElementById('sinusesValue').textContent = entry.sinuses || 0;
                 
@@ -3470,7 +3466,6 @@
                 // document.getElementById('agitated').value = entry.agitated || 0; // Field removed
                 displayAgitationLog(entry.agitation || []);
                 displayAnxietyLog(entry.anxiety || []);
-                document.getElementById('depressed').value = entry.depressed || 0;
                 document.getElementById('stomach').value = entry.stomach || 0;
                 document.getElementById('sinuses').value = entry.sinuses || 0;
                 
