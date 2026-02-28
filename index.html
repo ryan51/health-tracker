@@ -667,7 +667,10 @@
     <div class="header">
         <div class="header-content">
             <h1><a href="/" style="color: #0f172a; text-decoration: none; text-transform: uppercase;" onclick="showView('daily'); return false;">Memento Mori</a></h1>
-            <button onclick="showView('settings')" style="padding: 0.5rem 1rem; background: white; border: none; color: #0f172a; border-radius: 2px; cursor: pointer; font-weight: 400; text-transform: uppercase;">Settings</button>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <button onclick="refreshApp()" title="Refresh data" style="padding: 0.5rem 0.75rem; background: white; border: none; color: #0f172a; border-radius: 2px; cursor: pointer; font-weight: 400; font-size: 1.1rem;" id="refreshBtn">↻</button>
+                <button onclick="showView('settings')" style="padding: 0.5rem 1rem; background: white; border: none; color: #0f172a; border-radius: 2px; cursor: pointer; font-weight: 400; text-transform: uppercase;">Settings</button>
+            </div>
         </div>
     </div>
 
@@ -783,7 +786,7 @@
                             </div>
                             <div class="checkbox-group">
                                 <input type="checkbox" id="no2">
-                                <label for="no2">NO2 (pure)</label>
+                                <label for="no2">Nitric Oxide Ultra</label>
                             </div>
                             <div class="checkbox-group">
                                 <input type="checkbox" id="probiotic">
@@ -795,23 +798,23 @@
                     <!-- Column 3: Supplements Part 2 -->
                     <div>
                         <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                            <div class="checkbox-group">
+                            <div class="checkbox-group" style="display:none;">
                                 <input type="checkbox" id="lz">
                                 <label for="lz">L/Z (NOW)</label>
                             </div>
                             <div class="checkbox-group">
                                 <input type="checkbox" id="d3k">
-                                <label for="d3k">D3/K (pure)</label>
+                                <label for="d3k">Synergy K (D3)</label>
                             </div>
                             <div class="checkbox-group">
                                 <input type="checkbox" id="melatonin">
                                 <label for="melatonin">Melatonin</label>
                             </div>
-                            <div class="checkbox-group">
+                            <div class="checkbox-group" style="display:none;">
                                 <input type="checkbox" id="mblue">
                                 <label for="mblue">M-Blue</label>
                             </div>
-                            <div class="checkbox-group">
+                            <div class="checkbox-group" style="display:none;">
                                 <input type="checkbox" id="potassium">
                                 <label for="potassium">Potassium</label>
                             </div>
@@ -1013,6 +1016,14 @@
                 <h3>Media</h3>
                 <div class="form-grid">
                     <div class="form-group">
+                        <label for="amazon">Amazon Prime (hours)</label>
+                        <div class="number-input-group">
+                            <button type="button" onclick="adjustMedia('amazon', -0.5)">−</button>
+                            <input type="number" id="amazon" min="0" max="10" step="0.5" value="0" oninput="validateMediaInput(this)">
+                            <button type="button" onclick="adjustMedia('amazon', 0.5)">+</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
                         <label for="appleTv">Apple TV+ (hours)</label>
                         <div class="number-input-group">
                             <button type="button" onclick="adjustMedia('appleTv', -0.5)">−</button>
@@ -1034,14 +1045,6 @@
                             <button type="button" onclick="adjustMedia('paramount', -0.5)">−</button>
                             <input type="number" id="paramount" min="0" max="10" step="0.5" value="0" oninput="validateMediaInput(this)">
                             <button type="button" onclick="adjustMedia('paramount', 0.5)">+</button>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="amazon">Amazon Prime (hours)</label>
-                        <div class="number-input-group">
-                            <button type="button" onclick="adjustMedia('amazon', -0.5)">−</button>
-                            <input type="number" id="amazon" min="0" max="10" step="0.5" value="0" oninput="validateMediaInput(this)">
-                            <button type="button" onclick="adjustMedia('amazon', 0.5)">+</button>
                         </div>
                     </div>
                     <div class="form-group">
@@ -1394,7 +1397,18 @@
             </div>
             
             <h2>📋 Complete History</h2>
-            <button onclick="downloadCSV()" class="success" style="margin-bottom: 1rem;">⬇️ Download CSV</button>
+            
+            <!-- Date Range Filter -->
+            <div style="background: white; border-radius: 2px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                <label style="font-weight: 600;">From:</label>
+                <input type="date" id="historyStartDate" style="padding: 0.5rem; border: 2px solid #4285f4; border-radius: 2px; font-size: 1rem;">
+                <label style="font-weight: 600;">To:</label>
+                <input type="date" id="historyEndDate" style="padding: 0.5rem; border: 2px solid #4285f4; border-radius: 2px; font-size: 1rem;">
+                <button onclick="filterHistory()" style="padding: 0.5rem 1.25rem; background: #4285f4; color: white; border: none; border-radius: 2px; font-weight: 600; cursor: pointer;">Filter</button>
+                <button onclick="clearHistoryFilter()" style="padding: 0.5rem 1.25rem; background: var(--secondary); color: white; border: none; border-radius: 2px; font-weight: 600; cursor: pointer;">Show All</button>
+                <button onclick="downloadCSV()" class="success" style="margin-left: auto;">⬇️ Download CSV</button>
+            </div>
+            
             <div id="completeHistory"></div>
         </div>
     </div>
@@ -1870,6 +1884,7 @@
         function logEnergy() {
             const level = prompt('Enter energy level (0-10):');
             if (level !== null && level >= 0 && level <= 10) {
+                const note = prompt('Add a note (optional):');
                 const time = new Date().toLocaleTimeString();
                 
                 // Find or create entry
@@ -1886,7 +1901,7 @@
                 }
                 
                 // Add the log
-                entry.energy.push({ time, level: parseInt(level) });
+                entry.energy.push({ time, level: parseInt(level), note: note || '' });
                 
                 // Display and save
                 displayEnergyLog(entry.energy);
@@ -1912,8 +1927,11 @@
                 const div = document.createElement('div');
                 div.className = 'energy-entry';
                 div.innerHTML = `
-                    <span>${entry.time}</span>
-                    <span>Energy: ${entry.level}/10</span>
+                    <div>
+                        <span>${entry.time}</span>
+                        <span style="margin-left: 1rem;">Energy: ${entry.level}/10</span>
+                        ${entry.note ? `<div style="font-size: 0.85rem; color: var(--secondary); margin-top: 0.25rem;">${entry.note}</div>` : ''}
+                    </div>
                     <button onclick="deleteEnergyLog(${index})">Delete</button>
                 `;
                 container.appendChild(div);
@@ -1944,6 +1962,7 @@
         function logEnergyForDate() {
             const level = prompt('Enter energy level (0-10):');
             if (level !== null && level >= 0 && level <= 10) {
+                const note = prompt('Add a note (optional):');
                 const time = new Date().toLocaleTimeString();
                 
                 // Find or create entry for selected date
@@ -1959,7 +1978,7 @@
                     entry.energy = [];
                 }
                 
-                entry.energy.push({ time, level: parseInt(level) });
+                entry.energy.push({ time, level: parseInt(level), note: note || '' });
                 
                 // Save to Firebase
                 saveEnergyToFirebase(entry);
@@ -3089,7 +3108,7 @@
             
             // Hide/show main navigation tabs based on view
             const mainNavTabs = document.getElementById('mainNavTabs');
-            const settingsSubPages = ['settings', 'energy', 'agitation', 'anxiety', 'notes', 'history'];
+            const settingsSubPages = ['settings', 'energy', 'agitation', 'anxiety', 'depression', 'weightsHistory', 'notes', 'history'];
             
             if (settingsSubPages.includes(viewName)) {
                 // Hide main tabs when in Settings or its sub-pages
@@ -3157,7 +3176,20 @@
                     break;
                 case 'notes': loadNotesHistory(); break;
                 case 'media': loadMediaHistory(); break;
-                case 'history': loadCompleteHistory(); break;
+                case 'history': 
+                    // Set default date range to last 30 days if not already set
+                    const startPicker = document.getElementById('historyStartDate');
+                    const endPicker = document.getElementById('historyEndDate');
+                    if (startPicker && !startPicker.value) {
+                        const thirtyDaysAgo = new Date();
+                        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                        startPicker.value = thirtyDaysAgo.toISOString().split('T')[0];
+                    }
+                    if (endPicker && !endPicker.value) {
+                        endPicker.value = getLocalDateString();
+                    }
+                    loadCompleteHistory(); 
+                    break;
             }
         }
 
@@ -3167,7 +3199,7 @@
             console.log('healthData length:', healthData.length);
             const container = document.getElementById('medsHistory');
             console.log('Container element:', container);
-            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Concerta</th><th>Boost</th><th>Vitamin C</th><th>Omega-3</th><th>ZMA (ON)</th><th>NO2 (pure)</th><th>Probiotic</th><th>L/Z (NOW)</th><th>D3/K (pure)</th><th>Melatonin</th><th>M-Blue</th><th>Potassium</th><th>Creatine</th><th>Actions</th></tr></thead><tbody>';
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Concerta</th><th>Boost</th><th>Vitamin C</th><th>Omega-3</th><th>ZMA (ON)</th><th>Nitric Oxide Ultra</th><th>Probiotic</th><th>Synergy K (D3)</th><th>Melatonin</th><th>Creatine</th><th>Actions</th></tr></thead><tbody>';
             healthData.forEach(entry => {
                 html += `<tr>
                     <td>${entry.date}</td>
@@ -3178,11 +3210,8 @@
                     <td>${entry.zma ? '✓' : ''}</td>
                     <td>${entry.no2 ? '✓' : ''}</td>
                     <td>${entry.probiotic ? '✓' : ''}</td>
-                    <td>${entry.lz ? '✓' : ''}</td>
                     <td>${entry.d3k ? '✓' : ''}</td>
                     <td>${entry.melatonin ? '✓' : ''}</td>
-                    <td>${entry.mblue ? '✓' : ''}</td>
-                    <td>${entry.potassium ? '✓' : ''}</td>
                     <td>${entry.creatine ? '✓' : ''}</td>
                     <td><button onclick="editEntry('${entry.date}')" style="padding: 0.25rem 0.75rem; background: #4285f4; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 0.875rem;">Edit</button></td>
                 </tr>`;
@@ -3195,9 +3224,9 @@
 
         function loadDietHistory() {
             const container = document.getElementById('dietHistory');
-            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Weight</th><th>Diet</th><th>Water</th><th>Protein</th><th>Carbs</th><th>Alcohol</th><th>Nicotine</th><th>Fasting</th><th>Actions</th></tr></thead><tbody>';
+            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Weight</th><th>Diet</th><th>Water</th><th>Protein</th><th>Carbs</th><th>Alcohol</th><th>Nicotine</th><th>Fasting</th><th>Cheat Meal</th><th>Cheat Dessert</th><th>Actions</th></tr></thead><tbody>';
             healthData.forEach(entry => {
-                html += `<tr><td>${entry.date}</td><td>${entry.weight || '-'}</td><td>${entry.diet || '-'}</td><td>${entry.water || '-'}</td><td>${entry.protein || '-'}</td><td>${entry.carbs ? '✓' : '-'}</td><td>${entry.alcohol || '0'}</td><td>${entry.nicotine || '0'}</td><td>${entry.fasting || '-'}</td><td><button onclick="editEntry('${entry.date}')" style="padding: 0.25rem 0.75rem; background: #4285f4; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 0.875rem;">Edit</button></td></tr>`;
+                html += `<tr><td>${entry.date}</td><td>${entry.weight || '-'}</td><td>${entry.diet || '-'}</td><td>${entry.water || '-'}</td><td>${entry.protein || '-'}</td><td>${entry.carbs ? '✓' : '-'}</td><td>${entry.alcohol || '0'}</td><td>${entry.nicotine || '0'}</td><td>${entry.fasting || '-'}</td><td>${entry.cheatMeal ? '✓' : '-'}</td><td>${entry.cheatDessert ? '✓' : '-'}</td><td><button onclick="editEntry('${entry.date}')" style="padding: 0.25rem 0.75rem; background: #4285f4; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 0.875rem;">Edit</button></td></tr>`;
             });
             html += '</tbody></table>';
             container.innerHTML = html;
@@ -3327,12 +3356,74 @@
             container.innerHTML = html;
         }
 
+        function formatLogEntries(arr, color) {
+            if (!arr || arr.length === 0) return '<span style="color: var(--secondary);">—</span>';
+            return arr.map(e => {
+                const noteHtml = e.note ? `<div style="font-size: 0.8rem; color: var(--secondary); font-weight: 400; margin-top: 1px;">${e.note}</div>` : '';
+                return `<div style="margin-bottom: 0.35rem; line-height: 1.2;">
+                    <span style="color: ${color}; font-weight: 700;">${e.level}/10</span>
+                    <span style="color: var(--secondary); font-size: 0.8rem; margin-left: 0.4rem;">${e.time}</span>
+                    ${noteHtml}
+                </div>`;
+            }).join('');
+        }
+
+        function filterHistory() {
+            loadCompleteHistory();
+        }
+
+        function clearHistoryFilter() {
+            document.getElementById('historyStartDate').value = '';
+            document.getElementById('historyEndDate').value = '';
+            loadCompleteHistory();
+        }
+
         function loadCompleteHistory() {
             const container = document.getElementById('completeHistory');
-            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Weight</th><th>Exercise</th><th>Fasting</th><th>Notes</th></tr></thead><tbody>';
-            healthData.forEach(entry => {
-                html += `<tr onclick="loadDate('${entry.date}')" style="cursor: pointer;"><td>${entry.date}</td><td>${entry.weight || '-'}</td><td>${entry.exercise || '-'}</td><td>${entry.fasting || '-'}</td><td>${entry.notes ? entry.notes.substring(0, 50) + '...' : '-'}</td></tr>`;
-            });
+            const startVal = document.getElementById('historyStartDate') ? document.getElementById('historyStartDate').value : '';
+            const endVal = document.getElementById('historyEndDate') ? document.getElementById('historyEndDate').value : '';
+
+            let data = [...healthData].sort((a, b) => b.date.localeCompare(a.date));
+
+            if (startVal) data = data.filter(e => e.date >= startVal);
+            if (endVal) data = data.filter(e => e.date <= endVal);
+
+            let html = `<table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th style="color: var(--primary);">⚡ Energy</th>
+                        <th style="color: #f59e0b;">😤 Agitation</th>
+                        <th style="color: #8b5cf6;">😰 Anxiety</th>
+                        <th style="color: #6366f1;">😔 Depression</th>
+                        <th>Exercise</th>
+                        <th>Fasting</th>
+                        <th>Diet</th>
+                        <th>Cheat Meal</th>
+                        <th>Cheat Dessert</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            if (data.length === 0) {
+                html += '<tr><td colspan="10" style="text-align:center; color: var(--secondary); padding: 2rem;">No entries found for this date range</td></tr>';
+            } else {
+                data.forEach(entry => {
+                    html += `<tr onclick="editEntry('${entry.date}')" style="cursor: pointer; vertical-align: top;">
+                        <td style="white-space: nowrap; font-weight: 600;">${entry.date}</td>
+                        <td>${formatLogEntries(entry.energy, 'var(--primary)')}</td>
+                        <td>${formatLogEntries(entry.agitation, '#f59e0b')}</td>
+                        <td>${formatLogEntries(entry.anxiety, '#8b5cf6')}</td>
+                        <td>${formatLogEntries(entry.depression, '#6366f1')}</td>
+                        <td>${entry.exercise || '—'}</td>
+                        <td style="white-space: nowrap;">${entry.fasting || '—'}</td>
+                        <td style="max-width: 180px;">${entry.diet || '—'}</td>
+                        <td style="text-align: center;">${entry.cheatMeal ? '✓' : '—'}</td>
+                        <td style="text-align: center;">${entry.cheatDessert ? '✓' : '—'}</td>
+                    </tr>`;
+                });
+            }
+
             html += '</tbody></table>';
             container.innerHTML = html;
         }
@@ -4239,6 +4330,18 @@
             }
         }
         
+        // Refresh app data from Firebase
+        async function refreshApp() {
+            const btn = document.getElementById('refreshBtn');
+            if (btn) {
+                btn.style.transform = 'rotate(360deg)';
+                btn.style.transition = 'transform 0.5s';
+                setTimeout(() => { btn.style.transform = ''; btn.style.transition = ''; }, 600);
+            }
+            await loadDataFromFirebase();
+            loadDate(currentDate);
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', async function() {
             // Ensure Firebase is initialized
