@@ -3388,19 +3388,19 @@
             if (startVal) data = data.filter(e => e.date >= startVal);
             if (endVal) data = data.filter(e => e.date <= endVal);
 
-            let html = `<table class="history-table">
+            let html = `<table class="history-table" style="table-layout: fixed; width: 100%;">
                 <thead>
                     <tr>
-                        <th>Date</th>
-                        <th style="color: var(--primary);">⚡ Energy</th>
-                        <th style="color: #f59e0b;">😤 Agitation</th>
-                        <th style="color: #8b5cf6;">😰 Anxiety</th>
-                        <th style="color: #6366f1;">😔 Depression</th>
-                        <th>Exercise</th>
-                        <th>Fasting</th>
-                        <th>Diet</th>
-                        <th>Cheat Meal</th>
-                        <th>Cheat Dessert</th>
+                        <th style="width: 8%;">Date</th>
+                        <th style="width: 8%; color: var(--primary);">⚡ Energy</th>
+                        <th style="width: 8%; color: #f59e0b;">😤 Agitation</th>
+                        <th style="width: 8%; color: #8b5cf6;">😰 Anxiety</th>
+                        <th style="width: 8%; color: #6366f1;">😔 Depression</th>
+                        <th style="width: 8%;">Exercise</th>
+                        <th style="width: 8%;">Fasting</th>
+                        <th style="width: 25%;">Diet</th>
+                        <th style="width: 8%;">Cheat Meal</th>
+                        <th style="width: 8%;">Cheat Dessert</th>
                     </tr>
                 </thead>
                 <tbody>`;
@@ -3416,7 +3416,7 @@
                         <td>${formatLogEntries(entry.anxiety, '#8b5cf6')}</td>
                         <td>${formatLogEntries(entry.depression, '#6366f1')}</td>
                         <td>${entry.exercise || '—'}</td>
-                        <td style="white-space: nowrap;">${entry.fasting || '—'}</td>
+                        <td style="white-space: nowrap;">${(entry.fasting || '—').replace(' hours', '')}</td>
                         <td style="max-width: 180px;">${entry.diet || '—'}</td>
                         <td style="text-align: center;">${entry.cheatMeal ? '✓' : '—'}</td>
                         <td style="text-align: center;">${entry.cheatDessert ? '✓' : '—'}</td>
