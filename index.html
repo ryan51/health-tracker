@@ -3388,19 +3388,19 @@
             if (startVal) data = data.filter(e => e.date >= startVal);
             if (endVal) data = data.filter(e => e.date <= endVal);
 
-            let html = `<table class="history-table" style="table-layout: fixed; width: 100%;">
+            let html = `<table class="history-table">
                 <thead>
                     <tr>
-                        <th style="width: 8%;">Date</th>
-                        <th style="width: 8%; color: var(--primary);">⚡ Energy</th>
-                        <th style="width: 8%; color: #f59e0b;">😤 Agitation</th>
-                        <th style="width: 8%; color: #8b5cf6;">😰 Anxiety</th>
-                        <th style="width: 8%; color: #6366f1;">😔 Depression</th>
-                        <th style="width: 8%;">Exercise</th>
-                        <th style="width: 8%;">Fasting</th>
-                        <th style="width: 25%;">Diet</th>
-                        <th style="width: 8%;">Cheat Meal</th>
-                        <th style="width: 8%;">Cheat Dessert</th>
+                        <th>Date</th>
+                        <th style="color: var(--primary);">⚡ Energy</th>
+                        <th style="color: #f59e0b;">😤 Agitation</th>
+                        <th style="color: #8b5cf6;">😰 Anxiety</th>
+                        <th style="color: #6366f1;">😔 Depression</th>
+                        <th>Exercise</th>
+                        <th>Fasting</th>
+                        <th>Diet</th>
+                        <th>Cheat Meal</th>
+                        <th>Cheat Dessert</th>
                     </tr>
                 </thead>
                 <tbody>`;
@@ -3416,7 +3416,7 @@
                         <td>${formatLogEntries(entry.anxiety, '#8b5cf6')}</td>
                         <td>${formatLogEntries(entry.depression, '#6366f1')}</td>
                         <td>${entry.exercise || '—'}</td>
-                        <td style="white-space: nowrap;">${(entry.fasting || '—').replace(' hours', '')}</td>
+                        <td style="white-space: nowrap;">${entry.fasting || '—'}</td>
                         <td style="max-width: 180px;">${entry.diet || '—'}</td>
                         <td style="text-align: center;">${entry.cheatMeal ? '✓' : '—'}</td>
                         <td style="text-align: center;">${entry.cheatDessert ? '✓' : '—'}</td>
@@ -4070,6 +4070,10 @@
                                         class="weights-btn-edit">
                                     Edit
                                 </button>
+                                <button onclick="changeWorkoutDate('${workout.id}', '${workout.date}')" 
+                                        class="weights-btn-edit" style="background: #f59e0b;" title="Move to a different date">
+                                    📅 Date
+                                </button>
                                 <button onclick="deleteWorkout('${workout.id}')" 
                                         class="weights-btn-delete">
                                     Delete
@@ -4096,6 +4100,49 @@
                 alert('Error deleting workout: ' + error.message);
             }
         }
+
+        async function changeWorkoutDate(workoutId, currentDate) {
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;';
+            overlay.innerHTML = `
+                <div style="background:white;border-radius:8px;padding:2rem;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+                    <h3 style="margin:0 0 0.5rem 0;font-size:1.2rem;">📅 Change Workout Date</h3>
+                    <p style="margin:0 0 1.25rem 0;color:#64748b;font-size:0.9rem;">Current date: <strong>${currentDate}</strong></p>
+                    <label style="display:block;font-weight:600;margin-bottom:0.5rem;font-size:0.875rem;">Move to date</label>
+                    <input type="date" id="newWorkoutDate" value="${currentDate}"
+                           style="width:100%;padding:0.75rem;border:2px solid #4285f4;border-radius:4px;font-size:1rem;margin-bottom:1.25rem;">
+                    <div style="display:flex;gap:0.75rem;">
+                        <button id="confirmDateChange" style="flex:1;padding:0.75rem;background:#10b981;color:white;border:none;border-radius:4px;font-weight:600;cursor:pointer;font-size:1rem;">✓ Move</button>
+                        <button id="cancelDateChange" style="flex:1;padding:0.75rem;background:#64748b;color:white;border:none;border-radius:4px;font-weight:600;cursor:pointer;font-size:1rem;">Cancel</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            setTimeout(() => document.getElementById('newWorkoutDate').focus(), 50);
+            document.getElementById('cancelDateChange').onclick = () => document.body.removeChild(overlay);
+            overlay.onclick = (e) => { if (e.target === overlay) document.body.removeChild(overlay); };
+            document.getElementById('confirmDateChange').onclick = async () => {
+                const newDate = document.getElementById('newWorkoutDate').value;
+                if (!newDate) { alert('Please select a date'); return; }
+                if (newDate === currentDate) { document.body.removeChild(overlay); return; }
+                try {
+                    document.getElementById('confirmDateChange').textContent = 'Saving...';
+                    document.getElementById('confirmDateChange').disabled = true;
+                    await workoutsCollection.doc(workoutId).update({ date: newDate });
+                    await loadWorkoutsFromFirebase();
+                    document.body.removeChild(overlay);
+                    loadTodaysWorkouts();
+                    updateSyncStatus('', 'Moved to ' + newDate);
+                } catch (error) {
+                    console.error('Error changing workout date:', error);
+                    alert('Error changing date: ' + error.message);
+                    document.getElementById('confirmDateChange').textContent = '✓ Move';
+                    document.getElementById('confirmDateChange').disabled = false;
+                }
+            };
+        }
+
+
 
         
 
