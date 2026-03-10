@@ -1098,6 +1098,7 @@
                     <h2 style="margin: 0;">🏋️ Weights Tracking for</h2>
                     <input type="date" id="weightsDatePicker" onchange="changeWeightsDate()" style="padding: 0.5rem; border: 2px solid #4285f4; border-radius: 2px; font-size: 1rem; cursor: pointer;">
                 </div>
+                <button onclick="moveEntireWorkoutDay()" style="padding: 0.5rem 1rem; background: #f59e0b; color: white; border: none; border-radius: 2px; font-weight: 600; cursor: pointer; font-size: 0.9rem;" title="Move all exercises for this day to a different date">📅 Change Day's Date</button>
             </div>
             
             
@@ -4070,10 +4071,6 @@
                                         class="weights-btn-edit">
                                     Edit
                                 </button>
-                                <button onclick="changeWorkoutDate('${workout.id}', '${workout.date}')" 
-                                        class="weights-btn-edit" style="background: #f59e0b;" title="Move to a different date">
-                                    📅 Date
-                                </button>
                                 <button onclick="deleteWorkout('${workout.id}')" 
                                         class="weights-btn-delete">
                                     Delete
@@ -4101,43 +4098,61 @@
             }
         }
 
-        async function changeWorkoutDate(workoutId, currentDate) {
+        async function moveEntireWorkoutDay() {
+            const currentDate = selectedWeightsDate;
+            const dayWorkouts = allWorkouts.filter(w => w.date === currentDate);
+
+            if (dayWorkouts.length === 0) {
+                alert('No workouts logged for this date to move.');
+                return;
+            }
+
             const overlay = document.createElement('div');
             overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;';
             overlay.innerHTML = `
                 <div style="background:white;border-radius:8px;padding:2rem;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
-                    <h3 style="margin:0 0 0.5rem 0;font-size:1.2rem;">📅 Change Workout Date</h3>
-                    <p style="margin:0 0 1.25rem 0;color:#64748b;font-size:0.9rem;">Current date: <strong>${currentDate}</strong></p>
-                    <label style="display:block;font-weight:600;margin-bottom:0.5rem;font-size:0.875rem;">Move to date</label>
-                    <input type="date" id="newWorkoutDate" value="${currentDate}"
+                    <h3 style="margin:0 0 0.5rem 0;font-size:1.2rem;">📅 Change Day's Date</h3>
+                    <p style="margin:0 0 1.25rem 0;color:#64748b;font-size:0.9rem;">
+                        Move all <strong>${dayWorkouts.length} exercise${dayWorkouts.length !== 1 ? 's' : ''}</strong> from <strong>${currentDate}</strong> to:
+                    </p>
+                    <label style="display:block;font-weight:600;margin-bottom:0.5rem;font-size:0.875rem;">New date</label>
+                    <input type="date" id="newDayDate" value="${currentDate}"
                            style="width:100%;padding:0.75rem;border:2px solid #4285f4;border-radius:4px;font-size:1rem;margin-bottom:1.25rem;">
                     <div style="display:flex;gap:0.75rem;">
-                        <button id="confirmDateChange" style="flex:1;padding:0.75rem;background:#10b981;color:white;border:none;border-radius:4px;font-weight:600;cursor:pointer;font-size:1rem;">✓ Move</button>
-                        <button id="cancelDateChange" style="flex:1;padding:0.75rem;background:#64748b;color:white;border:none;border-radius:4px;font-weight:600;cursor:pointer;font-size:1rem;">Cancel</button>
+                        <button id="confirmDayMove" style="flex:1;padding:0.75rem;background:#10b981;color:white;border:none;border-radius:4px;font-weight:600;cursor:pointer;font-size:1rem;">✓ Move All</button>
+                        <button id="cancelDayMove" style="flex:1;padding:0.75rem;background:#64748b;color:white;border:none;border-radius:4px;font-weight:600;cursor:pointer;font-size:1rem;">Cancel</button>
                     </div>
                 </div>
             `;
             document.body.appendChild(overlay);
-            setTimeout(() => document.getElementById('newWorkoutDate').focus(), 50);
-            document.getElementById('cancelDateChange').onclick = () => document.body.removeChild(overlay);
+            setTimeout(() => document.getElementById('newDayDate').focus(), 50);
+            document.getElementById('cancelDayMove').onclick = () => document.body.removeChild(overlay);
             overlay.onclick = (e) => { if (e.target === overlay) document.body.removeChild(overlay); };
-            document.getElementById('confirmDateChange').onclick = async () => {
-                const newDate = document.getElementById('newWorkoutDate').value;
+            document.getElementById('confirmDayMove').onclick = async () => {
+                const newDate = document.getElementById('newDayDate').value;
                 if (!newDate) { alert('Please select a date'); return; }
                 if (newDate === currentDate) { document.body.removeChild(overlay); return; }
                 try {
-                    document.getElementById('confirmDateChange').textContent = 'Saving...';
-                    document.getElementById('confirmDateChange').disabled = true;
-                    await workoutsCollection.doc(workoutId).update({ date: newDate });
+                    document.getElementById('confirmDayMove').textContent = 'Moving...';
+                    document.getElementById('confirmDayMove').disabled = true;
+                    const batch = db.batch();
+                    dayWorkouts.forEach(w => {
+                        batch.update(workoutsCollection.doc(w.id), { date: newDate });
+                    });
+                    await batch.commit();
                     await loadWorkoutsFromFirebase();
+                    // Switch the date picker to the new date
+                    selectedWeightsDate = newDate;
+                    const picker = document.getElementById('weightsDatePicker');
+                    if (picker) picker.value = newDate;
                     document.body.removeChild(overlay);
                     loadTodaysWorkouts();
-                    updateSyncStatus('', 'Moved to ' + newDate);
+                    updateSyncStatus('', 'Moved ' + dayWorkouts.length + ' exercise(s) to ' + newDate);
                 } catch (error) {
-                    console.error('Error changing workout date:', error);
-                    alert('Error changing date: ' + error.message);
-                    document.getElementById('confirmDateChange').textContent = '✓ Move';
-                    document.getElementById('confirmDateChange').disabled = false;
+                    console.error('Error moving workouts:', error);
+                    alert('Error moving workouts: ' + error.message);
+                    document.getElementById('confirmDayMove').textContent = '✓ Move All';
+                    document.getElementById('confirmDayMove').disabled = false;
                 }
             };
         }
