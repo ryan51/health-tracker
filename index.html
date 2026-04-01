@@ -3214,7 +3214,7 @@
                     <td>${entry.d3k ? '✓' : ''}</td>
                     <td>${entry.melatonin ? '✓' : ''}</td>
                     <td>${entry.creatine ? '✓' : ''}</td>
-                    <td><button onclick="currentValue === 'weights' ? goToWeightsTab('${entry.date}') : editEntry('${entry.date}')" style="padding: 0.25rem 0.75rem; background: #4285f4; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 0.875rem;">Edit</button></td>
+                    <td><button onclick="${currentValue === 'weights' ? `goToWeightsTab('${entry.date}')` : `editEntry('${entry.date}')`}" style="padding: 0.25rem 0.75rem; background: #4285f4; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 0.875rem;">Edit</button></td>
                 </tr>`;
             });
             html += '</tbody></table>';
@@ -3265,7 +3265,7 @@
                     <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${(() => { if (currentValue === 'weights') { const dw = allWorkouts.filter(w => w.date === entry.date); const name = dw.find(w => w.workoutName)?.workoutName; return name || '<span style=\'color:#94a3b8;font-style:italic\'>Unnamed</span>'; } return entry.routine || '-'; })()}</td>
                     <td>${entry.stretch ? '✓' : ''}</td>
                     <td>${entry.meditate ? '✓' : ''}</td>
-                    <td><button onclick="currentValue === 'weights' ? goToWeightsTab('${entry.date}') : editEntry('${entry.date}')" style="padding: 0.25rem 0.75rem; background: #4285f4; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 0.875rem;">Edit</button></td>
+                    <td><button onclick="${currentValue === 'weights' ? `goToWeightsTab('${entry.date}')` : `editEntry('${entry.date}')`}" style="padding: 0.25rem 0.75rem; background: #4285f4; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 0.875rem;">Edit</button></td>
                 </tr>`;
             });
             html += '</tbody></table>';
