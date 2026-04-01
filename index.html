@@ -1098,7 +1098,7 @@
                     <h2 style="margin: 0;">🏋️ Weights Tracking for</h2>
                     <input type="date" id="weightsDatePicker" onchange="changeWeightsDate()" style="padding: 0.5rem; border: 2px solid #4285f4; border-radius: 2px; font-size: 1rem; cursor: pointer;">
                 </div>
-                <button onclick="moveEntireWorkoutDay()" style="padding: 0.5rem 1rem; background: #f59e0b; color: white; border: none; border-radius: 2px; font-weight: 600; cursor: pointer; font-size: 0.9rem;" title="Move all exercises for this day to a different date">📅 Change Day's Date</button>
+                <button onclick="moveEntireWorkoutDay()" style="padding: 0.5rem 1rem; background: #f59e0b; color: white; border: none; border-radius: 2px; font-weight: 600; cursor: pointer; font-size: 0.9rem;">📅 Change Day's Date</button>
             </div>
             
             
@@ -3214,7 +3214,7 @@
                     <td>${entry.d3k ? '✓' : ''}</td>
                     <td>${entry.melatonin ? '✓' : ''}</td>
                     <td>${entry.creatine ? '✓' : ''}</td>
-                    <td><button onclick="editEntry('${entry.date}')" style="padding: 0.25rem 0.75rem; background: #4285f4; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 0.875rem;">Edit</button></td>
+                    <td><button onclick="currentValue === 'weights' ? goToWeightsTab('${entry.date}') : editEntry('${entry.date}')" style="padding: 0.25rem 0.75rem; background: #4285f4; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 0.875rem;">Edit</button></td>
                 </tr>`;
             });
             html += '</tbody></table>';
@@ -3262,16 +3262,26 @@
                     <td>${entry.date}</td>
                     <td>${selectHtml}</td>
                     <td>${entry.duration || '-'}</td>
-                    <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${entry.routine || '-'}</td>
+                    <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${(() => { if (currentValue === 'weights') { const dw = allWorkouts.filter(w => w.date === entry.date); const name = dw.find(w => w.workoutName)?.workoutName; return name || '<span style=\'color:#94a3b8;font-style:italic\'>Unnamed</span>'; } return entry.routine || '-'; })()}</td>
                     <td>${entry.stretch ? '✓' : ''}</td>
                     <td>${entry.meditate ? '✓' : ''}</td>
-                    <td><button onclick="editEntry('${entry.date}')" style="padding: 0.25rem 0.75rem; background: #4285f4; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 0.875rem;">Edit</button></td>
+                    <td><button onclick="currentValue === 'weights' ? goToWeightsTab('${entry.date}') : editEntry('${entry.date}')" style="padding: 0.25rem 0.75rem; background: #4285f4; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 0.875rem;">Edit</button></td>
                 </tr>`;
             });
             html += '</tbody></table>';
             container.innerHTML = html;
         }
         
+
+        function goToWeightsTab(date) {
+            selectedWeightsDate = date;
+            const picker = document.getElementById('weightsDatePicker');
+            if (picker) picker.value = date;
+            showView('weights');
+            loadTodaysWorkouts();
+            loadSessionData();
+        }
+
         // Update exercise type for a specific date
         async function updateExerciseType(date, exerciseType) {
             try {
@@ -4101,23 +4111,15 @@
         async function moveEntireWorkoutDay() {
             const currentDate = selectedWeightsDate;
             const dayWorkouts = allWorkouts.filter(w => w.date === currentDate);
-
-            if (dayWorkouts.length === 0) {
-                alert('No workouts logged for this date to move.');
-                return;
-            }
-
+            if (dayWorkouts.length === 0) { alert('No workouts logged for this date to move.'); return; }
             const overlay = document.createElement('div');
             overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;';
             overlay.innerHTML = `
                 <div style="background:white;border-radius:8px;padding:2rem;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
                     <h3 style="margin:0 0 0.5rem 0;font-size:1.2rem;">📅 Change Day's Date</h3>
-                    <p style="margin:0 0 1.25rem 0;color:#64748b;font-size:0.9rem;">
-                        Move all <strong>${dayWorkouts.length} exercise${dayWorkouts.length !== 1 ? 's' : ''}</strong> from <strong>${currentDate}</strong> to:
-                    </p>
+                    <p style="margin:0 0 1.25rem 0;color:#64748b;font-size:0.9rem;">Move all <strong>${dayWorkouts.length} exercise${dayWorkouts.length !== 1 ? 's' : ''}</strong> from <strong>${currentDate}</strong> to:</p>
                     <label style="display:block;font-weight:600;margin-bottom:0.5rem;font-size:0.875rem;">New date</label>
-                    <input type="date" id="newDayDate" value="${currentDate}"
-                           style="width:100%;padding:0.75rem;border:2px solid #4285f4;border-radius:4px;font-size:1rem;margin-bottom:1.25rem;">
+                    <input type="date" id="newDayDate" value="${currentDate}" style="width:100%;padding:0.75rem;border:2px solid #4285f4;border-radius:4px;font-size:1rem;margin-bottom:1.25rem;">
                     <div style="display:flex;gap:0.75rem;">
                         <button id="confirmDayMove" style="flex:1;padding:0.75rem;background:#10b981;color:white;border:none;border-radius:4px;font-weight:600;cursor:pointer;font-size:1rem;">✓ Move All</button>
                         <button id="cancelDayMove" style="flex:1;padding:0.75rem;background:#64748b;color:white;border:none;border-radius:4px;font-weight:600;cursor:pointer;font-size:1rem;">Cancel</button>
@@ -4136,12 +4138,9 @@
                     document.getElementById('confirmDayMove').textContent = 'Moving...';
                     document.getElementById('confirmDayMove').disabled = true;
                     const batch = db.batch();
-                    dayWorkouts.forEach(w => {
-                        batch.update(workoutsCollection.doc(w.id), { date: newDate });
-                    });
+                    dayWorkouts.forEach(w => batch.update(workoutsCollection.doc(w.id), { date: newDate }));
                     await batch.commit();
                     await loadWorkoutsFromFirebase();
-                    // Switch the date picker to the new date
                     selectedWeightsDate = newDate;
                     const picker = document.getElementById('weightsDatePicker');
                     if (picker) picker.value = newDate;
