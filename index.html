@@ -810,6 +810,10 @@
                                 <input type="checkbox" id="melatonin">
                                 <label for="melatonin">Melatonin</label>
                             </div>
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="zinc">
+                                <label for="zinc">Zinc</label>
+                            </div>
                             <div class="checkbox-group" style="display:none;">
                                 <input type="checkbox" id="mblue">
                                 <label for="mblue">M-Blue</label>
@@ -1528,6 +1532,7 @@
                     omega3: document.getElementById('omega3').checked,
                     zma: document.getElementById('zma').checked,
                     creatine: document.getElementById('creatine').checked,
+                    zinc: document.getElementById('zinc').checked,
                     no2: document.getElementById('no2').checked,
                     probiotic: document.getElementById('probiotic').checked,
                     lz: document.getElementById('lz').checked,
@@ -1660,6 +1665,7 @@
                 document.getElementById('omega3').checked = entry.omega3 || false;
                 document.getElementById('zma').checked = entry.zma || false;
                 document.getElementById('creatine').checked = entry.creatine || false;
+                document.getElementById('zinc').checked = entry.zinc || false;
                 document.getElementById('no2').checked = entry.no2 || false;
                 document.getElementById('probiotic').checked = entry.probiotic || false;
                 document.getElementById('lz').checked = entry.lz || false;
@@ -3196,40 +3202,65 @@
 
         // History views
         function loadMedsHistory() {
-            console.log('===== LOADING MEDS HISTORY =====');
-            console.log('healthData length:', healthData.length);
             const container = document.getElementById('medsHistory');
-            console.log('Container element:', container);
-            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Concerta</th><th>Boost</th><th>Vitamin C</th><th>Omega-3</th><th>ZMA (ON)</th><th>Nitric Oxide Ultra</th><th>Probiotic</th><th>Synergy K (D3)</th><th>Melatonin</th><th>Creatine</th><th>Actions</th></tr></thead><tbody>';
+            if (!healthData || healthData.length === 0) {
+                container.innerHTML = '<p style="text-align:center;color:var(--secondary);padding:2rem;">No data yet</p>';
+                return;
+            }
+            let html = '<div style="background:white;border-radius:2px;padding:1.5rem;box-shadow:0 1px 3px 0 rgb(0 0 0 / 0.1);">';
+            html += '<table class="history-table"><thead><tr><th>Date</th><th>Concerta</th><th>Boost</th><th>Vit C</th><th>Omega-3</th><th>ZMA</th><th>NO2</th><th>Probiotic</th><th>D3/K</th><th>Melatonin</th><th>Zinc</th><th>Creatine</th><th>Actions</th></tr></thead><tbody>';
             healthData.forEach(entry => {
+                const ck = v => v ? '<span style="color:#10b981;font-weight:700;">✓</span>' : '<span style="color:#e2e8f0;">–</span>';
                 html += `<tr>
-                    <td>${entry.date}</td>
-                    <td>${entry.concerta ? '✓' : ''}</td>
-                    <td>${entry.boost ? '✓' : ''}</td>
-                    <td>${entry.vitaminC ? '✓' : ''}</td>
-                    <td>${entry.omega3 ? '✓' : ''}</td>
-                    <td>${entry.zma ? '✓' : ''}</td>
-                    <td>${entry.no2 ? '✓' : ''}</td>
-                    <td>${entry.probiotic ? '✓' : ''}</td>
-                    <td>${entry.d3k ? '✓' : ''}</td>
-                    <td>${entry.melatonin ? '✓' : ''}</td>
-                    <td>${entry.creatine ? '✓' : ''}</td>
-                    <td><button onclick="${currentValue === 'weights' ? `goToWeightsTab('${entry.date}')` : `editEntry('${entry.date}')`}" style="padding: 0.25rem 0.75rem; background: #4285f4; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 0.875rem;">Edit</button></td>
+                    <td style="white-space:nowrap;font-weight:600;">${entry.date}</td>
+                    <td style="text-align:center;">${ck(entry.concerta)}</td>
+                    <td style="text-align:center;">${ck(entry.boost)}</td>
+                    <td style="text-align:center;">${ck(entry.vitaminC)}</td>
+                    <td style="text-align:center;">${ck(entry.omega3)}</td>
+                    <td style="text-align:center;">${ck(entry.zma)}</td>
+                    <td style="text-align:center;">${ck(entry.no2)}</td>
+                    <td style="text-align:center;">${ck(entry.probiotic)}</td>
+                    <td style="text-align:center;">${ck(entry.d3k)}</td>
+                    <td style="text-align:center;">${ck(entry.melatonin)}</td>
+                    <td style="text-align:center;">${ck(entry.zinc)}</td>
+                    <td style="text-align:center;">${ck(entry.creatine)}</td>
+                    <td><button onclick="editEntry('${entry.date}')" style="padding:0.25rem 0.75rem;background:#4285f4;color:white;border:none;border-radius:2px;cursor:pointer;font-size:0.875rem;">Edit</button></td>
                 </tr>`;
             });
-            html += '</tbody></table>';
+            html += '</tbody></table></div>';
             container.innerHTML = html;
-            console.log('HTML set, rows created:', healthData.length);
-            console.log('Sample onclick from first row:', healthData.length > 0 ? `editEntry('${healthData[0].date}')` : 'no data');
         }
 
         function loadDietHistory() {
             const container = document.getElementById('dietHistory');
-            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Weight</th><th>Diet</th><th>Water</th><th>Protein</th><th>Carbs</th><th>Alcohol</th><th>Nicotine</th><th>Fasting</th><th>Cheat Meal</th><th>Cheat Dessert</th><th>Actions</th></tr></thead><tbody>';
+            if (!healthData || healthData.length === 0) {
+                container.innerHTML = '<p style="text-align:center;color:var(--secondary);padding:2rem;">No data yet</p>';
+                return;
+            }
+            const row = (label, value, highlight) => {
+                const style = highlight ? 'color:#10b981;font-weight:700;' : 'color:#0f172a;';
+                return `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid #f1f5f9;">
+                    <span style="font-size:0.8rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.04em;">${label}</span>
+                    <span style="font-size:0.95rem;${style}">${value}</span>
+                </div>`;
+            };
+            let html = '<div style="display:flex;flex-direction:column;gap:1rem;">';
             healthData.forEach(entry => {
-                html += `<tr><td>${entry.date}</td><td>${entry.weight || '-'}</td><td>${entry.diet || '-'}</td><td>${entry.water || '-'}</td><td>${entry.protein || '-'}</td><td>${entry.carbs ? '✓' : '-'}</td><td>${entry.alcohol || '0'}</td><td>${entry.nicotine || '0'}</td><td>${entry.fasting || '-'}</td><td>${entry.cheatMeal ? '✓' : '-'}</td><td>${entry.cheatDessert ? '✓' : '-'}</td><td><button onclick="editEntry('${entry.date}')" style="padding: 0.25rem 0.75rem; background: #4285f4; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 0.875rem;">Edit</button></td></tr>`;
+                html += `<div style="background:white;border-radius:2px;padding:1.25rem;box-shadow:0 1px 3px 0 rgb(0 0 0 / 0.1);">
+                    ${row('Date', `<strong>${entry.date}</strong>`)}
+                    ${row('Weight', entry.weight ? entry.weight + ' lbs' : '–')}
+                    ${row('Diet', entry.diet || '–')}
+                    ${row('Alcohol', entry.alcohol || '0')}
+                    ${row('Nicotine', entry.nicotine || '0')}
+                    ${row('Fasting', entry.fasting || '–')}
+                    ${row('Cheat Meal', entry.cheatMeal ? '✓' : '–', entry.cheatMeal)}
+                    ${row('Cheat Dessert', entry.cheatDessert ? '✓' : '–', entry.cheatDessert)}
+                    <div style="padding-top:0.75rem;">
+                        <button onclick="editEntry('${entry.date}')" style="width:100%;padding:0.6rem;background:#4285f4;color:white;border:none;border-radius:2px;cursor:pointer;font-weight:600;font-size:0.875rem;">Edit</button>
+                    </div>
+                </div>`;
             });
-            html += '</tbody></table>';
+            html += '</div>';
             container.innerHTML = html;
         }
 
@@ -3536,6 +3567,7 @@
                 document.getElementById('mblue').checked = entry.mblue || false;
                 document.getElementById('potassium').checked = entry.potassium || false;
                 document.getElementById('creatine').checked = entry.creatine || false;
+                document.getElementById('zinc').checked = entry.zinc || false;
                 
                 // Diet
                 document.getElementById('weight').value = entry.weight || '';
