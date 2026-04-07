@@ -596,6 +596,14 @@
                 font-size: 16px !important;
             }
         }
+        /* Diet history responsive layout */
+        .diet-table-desktop { display: block; }
+        .diet-cards-mobile  { display: none;  }
+        @media (max-width: 768px) {
+            .diet-table-desktop { display: none;  }
+            .diet-cards-mobile  { display: flex !important; }
+        }
+
         /* Number input with +/- buttons */
         .number-input-group {
             display: flex;
@@ -3237,41 +3245,42 @@
                 container.innerHTML = '<p style="text-align:center;color:var(--secondary);padding:2rem;">No data yet</p>';
                 return;
             }
-            const isMobile = window.innerWidth <= 768;
-            if (isMobile) {
-                const row = (label, value, highlight) => {
-                    const style = highlight ? 'color:#10b981;font-weight:700;' : 'color:#0f172a;';
-                    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid #f1f5f9;">
-                        <span style="font-size:0.8rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.04em;">${label}</span>
-                        <span style="font-size:0.95rem;${style}">${value}</span>
-                    </div>`;
-                };
-                let html = '<div style="display:flex;flex-direction:column;gap:1rem;">';
-                healthData.forEach(entry => {
-                    html += `<div style="background:white;border-radius:2px;padding:1.25rem;box-shadow:0 1px 3px 0 rgb(0 0 0 / 0.1);">
-                        ${row('Date', `<strong>${entry.date}</strong>`)}
-                        ${row('Weight', entry.weight ? entry.weight + ' lbs' : '–')}
-                        ${row('Diet', entry.diet || '–')}
-                        ${row('Alcohol', entry.alcohol || '0')}
-                        ${row('Nicotine', entry.nicotine || '0')}
-                        ${row('Fasting', entry.fasting || '–')}
-                        ${row('Cheat Meal', entry.cheatMeal ? '✓' : '–', entry.cheatMeal)}
-                        ${row('Cheat Dessert', entry.cheatDessert ? '✓' : '–', entry.cheatDessert)}
-                        <div style="padding-top:0.75rem;">
-                            <button onclick="editEntry('${entry.date}')" style="width:100%;padding:0.6rem;background:#4285f4;color:white;border:none;border-radius:2px;cursor:pointer;font-weight:600;font-size:0.875rem;">Edit</button>
-                        </div>
-                    </div>`;
-                });
-                html += '</div>';
-                container.innerHTML = html;
-            } else {
-                let html = '<table class="history-table"><thead><tr><th>Date</th><th>Weight</th><th>Diet</th><th>Water</th><th>Protein</th><th>Carbs</th><th>Alcohol</th><th>Nicotine</th><th>Fasting</th><th>Cheat Meal</th><th>Cheat Dessert</th><th>Actions</th></tr></thead><tbody>';
-                healthData.forEach(entry => {
-                    html += `<tr><td>${entry.date}</td><td>${entry.weight || '-'}</td><td>${entry.diet || '-'}</td><td>${entry.water || '-'}</td><td>${entry.protein || '-'}</td><td>${entry.carbs ? '✓' : '-'}</td><td>${entry.alcohol || '0'}</td><td>${entry.nicotine || '0'}</td><td>${entry.fasting || '-'}</td><td>${entry.cheatMeal ? '✓' : '-'}</td><td>${entry.cheatDessert ? '✓' : '-'}</td><td><button onclick="editEntry('${entry.date}')" style="padding: 0.25rem 0.75rem; background: #4285f4; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 0.875rem;">Edit</button></td></tr>`;
-                });
-                html += '</tbody></table>';
-                container.innerHTML = html;
-            }
+
+            const row = (label, value, highlight) => {
+                const style = highlight ? 'color:#10b981;font-weight:700;' : 'color:#0f172a;';
+                return `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid #f1f5f9;">
+                    <span style="font-size:0.8rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.04em;">${label}</span>
+                    <span style="font-size:0.95rem;${style}">${value}</span>
+                </div>`;
+            };
+
+            // Desktop table
+            let tableHtml = '<table class="history-table diet-table-desktop"><thead><tr><th>Date</th><th>Weight</th><th>Diet</th><th>Water</th><th>Protein</th><th>Carbs</th><th>Alcohol</th><th>Nicotine</th><th>Fasting</th><th>Cheat Meal</th><th>Cheat Dessert</th><th>Actions</th></tr></thead><tbody>';
+            healthData.forEach(entry => {
+                tableHtml += `<tr><td>${entry.date}</td><td>${entry.weight || '-'}</td><td>${entry.diet || '-'}</td><td>${entry.water || '-'}</td><td>${entry.protein || '-'}</td><td>${entry.carbs ? '✓' : '-'}</td><td>${entry.alcohol || '0'}</td><td>${entry.nicotine || '0'}</td><td>${entry.fasting || '-'}</td><td>${entry.cheatMeal ? '✓' : '-'}</td><td>${entry.cheatDessert ? '✓' : '-'}</td><td><button onclick="editEntry('${entry.date}')" style="padding:0.25rem 0.75rem;background:#4285f4;color:white;border:none;border-radius:2px;cursor:pointer;font-size:0.875rem;">Edit</button></td></tr>`;
+            });
+            tableHtml += '</tbody></table>';
+
+            // Mobile cards
+            let cardsHtml = '<div class="diet-cards-mobile" style="display:flex;flex-direction:column;gap:1rem;">';
+            healthData.forEach(entry => {
+                cardsHtml += `<div style="background:white;border-radius:2px;padding:1.25rem;box-shadow:0 1px 3px 0 rgb(0 0 0 / 0.1);">
+                    ${row('Date', `<strong>${entry.date}</strong>`)}
+                    ${row('Weight', entry.weight ? entry.weight + ' lbs' : '–')}
+                    ${row('Diet', entry.diet || '–')}
+                    ${row('Alcohol', entry.alcohol || '0')}
+                    ${row('Nicotine', entry.nicotine || '0')}
+                    ${row('Fasting', entry.fasting || '–')}
+                    ${row('Cheat Meal', entry.cheatMeal ? '✓' : '–', entry.cheatMeal)}
+                    ${row('Cheat Dessert', entry.cheatDessert ? '✓' : '–', entry.cheatDessert)}
+                    <div style="padding-top:0.75rem;">
+                        <button onclick="editEntry('${entry.date}')" style="width:100%;padding:0.6rem;background:#4285f4;color:white;border:none;border-radius:2px;cursor:pointer;font-weight:600;font-size:0.875rem;">Edit</button>
+                    </div>
+                </div>`;
+            });
+            cardsHtml += '</div>';
+
+            container.innerHTML = tableHtml + cardsHtml;
         }
 
         function loadExerciseHistory() {
