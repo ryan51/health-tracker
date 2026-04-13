@@ -3232,23 +3232,35 @@
                 container.innerHTML = '<p style="text-align:center;color:var(--secondary);padding:2rem;">No data yet</p>';
                 return;
             }
+            const ck = v => v ? '<span style="color:#10b981;font-weight:700;">✓</span>' : '<span style="color:#e2e8f0;">–</span>';
+            const grpHdr = (label, cols) => `<tr style="background:#f8fafc;"><td style="font-size:0.7rem;font-weight:700;color:#4285f4;text-transform:uppercase;letter-spacing:0.05em;padding:0.35rem 0.75rem;">${label}</td>${'<td></td>'.repeat(cols)}<td></td></tr>`;
+
             let html = '<div style="background:white;border-radius:2px;padding:1.5rem;box-shadow:0 1px 3px 0 rgb(0 0 0 / 0.1);">';
-            html += '<table class="history-table"><thead><tr><th>Date</th><th>Concerta</th><th>Boost</th><th>Vit C</th><th>Omega-3</th><th>ZMA</th><th>NO2</th><th>Probiotic</th><th>D3/K</th><th>Melatonin</th><th>Zinc</th><th>Creatine</th><th>Actions</th></tr></thead><tbody>';
+            html += `<table class="history-table"><thead><tr>
+                <th>Date</th>
+                <th style="text-align:center;">Concerta</th>
+                <th style="text-align:center;">Vit C</th>
+                <th style="text-align:center;">Zinc</th>
+                <th style="text-align:center;">Omega-3</th>
+                <th style="text-align:center;">Synergy-K</th>
+                <th style="text-align:center;">Boost</th>
+                <th style="text-align:center;">NO2</th>
+                <th style="text-align:center;">Creatine</th>
+                <th style="text-align:center;">Magnesium</th>
+                <th>Actions</th>
+            </tr></thead><tbody>`;
             healthData.forEach(entry => {
-                const ck = v => v ? '<span style="color:#10b981;font-weight:700;">✓</span>' : '<span style="color:#e2e8f0;">–</span>';
                 html += `<tr>
                     <td style="white-space:nowrap;font-weight:600;">${entry.date}</td>
                     <td style="text-align:center;">${ck(entry.concerta)}</td>
-                    <td style="text-align:center;">${ck(entry.boost)}</td>
                     <td style="text-align:center;">${ck(entry.vitaminC)}</td>
-                    <td style="text-align:center;">${ck(entry.omega3)}</td>
-                    <td style="text-align:center;">${ck(entry.zma)}</td>
-                    <td style="text-align:center;">${ck(entry.no2)}</td>
-                    <td style="text-align:center;">${ck(entry.probiotic)}</td>
-                    <td style="text-align:center;">${ck(entry.d3k)}</td>
-                    <td style="text-align:center;">${ck(entry.melatonin)}</td>
                     <td style="text-align:center;">${ck(entry.zinc)}</td>
+                    <td style="text-align:center;">${ck(entry.omega3)}</td>
+                    <td style="text-align:center;">${ck(entry.d3k)}</td>
+                    <td style="text-align:center;">${ck(entry.boost)}</td>
+                    <td style="text-align:center;">${ck(entry.no2)}</td>
                     <td style="text-align:center;">${ck(entry.creatine)}</td>
+                    <td style="text-align:center;">${ck(entry.magnesium)}</td>
                     <td><button onclick="editEntry('${entry.date}')" style="padding:0.25rem 0.75rem;background:#4285f4;color:white;border:none;border-radius:2px;cursor:pointer;font-size:0.875rem;">Edit</button></td>
                 </tr>`;
             });
