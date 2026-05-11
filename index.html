@@ -1125,7 +1125,10 @@
                     <h2 style="margin: 0;">🏋️ Weights Tracking for</h2>
                     <input type="date" id="weightsDatePicker" onchange="changeWeightsDate()" style="padding: 0.5rem; border: 2px solid #4285f4; border-radius: 2px; font-size: 1rem; cursor: pointer;">
                 </div>
-                <button onclick="moveEntireWorkoutDay()" style="padding: 0.5rem 1rem; background: #f59e0b; color: white; border: none; border-radius: 2px; font-weight: 600; cursor: pointer; font-size: 0.9rem;">📅 Change Day's Date</button>
+                <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+                    <button onclick="moveEntireWorkoutDay()" style="padding: 0.5rem 1rem; background: #f59e0b; color: white; border: none; border-radius: 2px; font-weight: 600; cursor: pointer; font-size: 0.9rem;">📅 Change Day's Date</button>
+                    <button onclick="exportWorkoutsJSON()" style="padding: 0.5rem 1rem; background: #10b981; color: white; border: none; border-radius: 2px; font-weight: 600; cursor: pointer; font-size: 0.9rem;">⬇️ Export Workouts</button>
+                </div>
             </div>
             
             
@@ -4255,6 +4258,34 @@
                 console.error('Error deleting workout:', error);
                 alert('Error deleting workout: ' + error.message);
             }
+        }
+
+        function exportWorkoutsJSON() {
+            if (!allWorkouts || allWorkouts.length === 0) {
+                alert('No workout data to export.');
+                return;
+            }
+            // Clean and sort
+            const data = [...allWorkouts]
+                .sort((a, b) => a.date.localeCompare(b.date))
+                .map(w => ({
+                    date:        w.date,
+                    workoutName: w.workoutName || '',
+                    exercise:    w.exercise,
+                    sets:        w.sets,
+                    reps:        w.reps,
+                    weight:      w.weight,
+                    notes:       w.notes || ''
+                }));
+
+            const json   = JSON.stringify(data, null, 2);
+            const blob   = new Blob([json], { type: 'application/json' });
+            const url    = URL.createObjectURL(blob);
+            const a      = document.createElement('a');
+            a.href       = url;
+            a.download   = `workouts_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
         }
 
         async function moveEntireWorkoutDay() {
