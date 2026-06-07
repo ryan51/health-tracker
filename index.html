@@ -8,10 +8,10 @@
     <meta name="apple-mobile-web-app-title" content="Memento Mori">
     
     <!-- App Icons -->
-    <link rel="icon" type="image/png" sizes="32x32" href="app-icon-health-192.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="app-icon-health-192.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="app-icon-health-512.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="app-icon-health-192.png">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="apple-touch-icon" href="app-icon-180.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="app-icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="app-icon-512.png">
     
     <title>Memento Mori - Health Tracker</title>
     
@@ -330,6 +330,23 @@
             line-height: 1.125em;
             border-bottom: 2px solid var(--border);
             padding-bottom: 0.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+
+        .form-section h3::after {
+            content: "▾";
+            font-size: 1.1rem;
+            color: #9ca3af;
+            transition: transform 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .form-section h3.collapsed::after {
+            transform: rotate(-90deg);
         }
 
         .form-grid {
@@ -766,7 +783,7 @@
             </div>
             
             <div class="form-section">
-                <h3>😴 Sleep</h3>
+                <h3 onclick="toggleSection(this)">Sleep</h3>
                 <div class="form-grid">
                     <div class="form-group">
                         <label for="wakeUp">Wake Up</label>
@@ -780,7 +797,7 @@
             </div>
 
             <div class="form-section">
-                <h3>Medications & Supplements</h3>
+                <h3 onclick="toggleSection(this)">Medications & Supplements</h3>
                 <div class="medications-grid">
 
                     <!-- MORNING -->
@@ -875,7 +892,7 @@
 
                 </div>
 
-                <h3>Diet & Nutrition</h3>
+                <h3 onclick="toggleSection(this)">Diet & Nutrition</h3>
                 <div class="form-grid">
                     <div class="form-group">
                         <label for="weight">Weight</label>
@@ -951,7 +968,7 @@
             </div>
 
             <div class="form-section">
-                <h3>Exercise</h3>
+                <h3 onclick="toggleSection(this)">Exercise</h3>
                 <div class="form-group">
                     <label for="routine">Routine Description</label>
                     <textarea id="routine"></textarea>
@@ -994,7 +1011,7 @@
             </div>
 
             <div class="form-section">
-                <h3>Ailments (0-10 Scale)</h3>
+                <h3 onclick="toggleSection(this)">Ailments (0-10 Scale)</h3>
                 <div class="form-grid">
                     <div class="form-group">
                         <label for="headache">Headache</label>
@@ -1033,7 +1050,7 @@
             </div>
 
             <div class="form-section">
-                <h3>Energy, Agitation, Anxiety & Depression Tracking</h3>
+                <h3 onclick="toggleSection(this)">Energy, Agitation, Anxiety & Depression Tracking</h3>
                 <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
                     <button onclick="logEnergy()">⚡ Log Current Energy</button>
                     <button onclick="logAgitation()" style="background: #f59e0b;">😤 Log Current Agitation</button>
@@ -1047,14 +1064,22 @@
             </div>
 
             <div class="form-section">
-                <h3>Notes</h3>
+                <h3 onclick="toggleSection(this)">Notes</h3>
                 <div class="form-group">
                     <textarea id="notes" placeholder="Any additional notes for the day..."></textarea>
+                </div>
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label for="rateDay">Rate the Day (0-10)</label>
+                    <div class="number-input-group">
+                        <button type="button" onclick="adjustDiet('rateDay', -1)">−</button>
+                        <input type="number" id="rateDay" min="0" max="10" step="1" value="0">
+                        <button type="button" onclick="adjustDiet('rateDay', 1)">+</button>
+                    </div>
                 </div>
             </div>
 
             <div class="form-section">
-                <h3>Media</h3>
+                <h3 onclick="toggleSection(this)">Media</h3>
                 <div class="form-grid">
                     <div class="form-group">
                         <label for="amazon">Amazon Prime (hours)</label>
@@ -1456,6 +1481,17 @@
     </div>
 
     <script>
+        function toggleSection(h3El) {
+            h3El.classList.toggle('collapsed');
+            const isCollapsed = h3El.classList.contains('collapsed');
+            let el = h3El.nextElementSibling;
+            while (el) {
+                if (el.tagName === 'H3') break;
+                el.style.display = isCollapsed ? 'none' : '';
+                el = el.nextElementSibling;
+            }
+        }
+
         // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyCOkn1TUMnMQLpipLaBj3joU18-X9_YY9A",
@@ -1617,6 +1653,7 @@
                     depression: getCurrentDepressionLog(),
                     // Notes
                     notes: document.getElementById('notes').value,
+                    rateDay: document.getElementById('rateDay').value,
                     // Media
                     appleTv: parseFloat(document.getElementById('appleTv').value) || 0,
                     netflix: parseFloat(document.getElementById('netflix').value) || 0,
@@ -1724,8 +1761,6 @@
                 document.getElementById('diet').value = entry.diet || '';
                 document.getElementById('wakeUp').value = entry.wakeUp || '';
                 document.getElementById('goToSleep').value = entry.goToSleep || '';
-                document.getElementById('wakeUp').value = entry.wakeUp || '';
-                document.getElementById('goToSleep').value = entry.goToSleep || '';
                 document.getElementById('startEating').value = entry.startEating || '';
                 document.getElementById('endEating').value = entry.endEating || '';
                 document.getElementById('water').value = entry.water || '';
@@ -1755,6 +1790,7 @@
                 document.getElementById('sinusesValue').textContent = entry.sinuses || 0;
                 
                 document.getElementById('notes').value = entry.notes || '';
+                document.getElementById('rateDay').value = entry.rateDay || '';
                 
                 console.log('📂 Loading media for date:', date);
                 console.log('📂 Media values from entry:', {
@@ -3721,6 +3757,7 @@
                 
                 // Notes
                 document.getElementById('notes').value = entry.notes || '';
+                document.getElementById('rateDay').value = entry.rateDay || '';
                 
                 // Energy
                 displayEnergyLog(entry.energy || []);
