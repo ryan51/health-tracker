@@ -330,23 +330,6 @@
             line-height: 1.125em;
             border-bottom: 2px solid var(--border);
             padding-bottom: 0.5rem;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            user-select: none;
-        }
-
-        .form-section h3::after {
-            content: "▾";
-            font-size: 1.1rem;
-            color: #9ca3af;
-            transition: transform 0.2s ease;
-            flex-shrink: 0;
-        }
-
-        .form-section h3.collapsed::after {
-            transform: rotate(-90deg);
         }
 
         .form-grid {
@@ -776,28 +759,14 @@
         <div id="dailyView" class="view active">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
                 <div style="display: flex; align-items: center; gap: 1rem;">
-                    <h2 style="margin: 0;">Daily Entry</h2>
+                    <h2 style="margin: 0;">Daily Entry for</h2>
                     <input type="date" id="datePicker" onchange="changeDate()" style="padding: 0.5rem; border: 2px solid #4285f4; border-radius: 2px; font-size: 1rem; cursor: pointer;">
                 </div>
                 <button onclick="saveEntry()" style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 2px; font-weight: 600; cursor: pointer;">Save Entry</button>
             </div>
             
             <div class="form-section">
-                <h3 onclick="toggleSection(this)">Sleep</h3>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="wakeUp">Wake Up</label>
-                        <input type="time" id="wakeUp">
-                    </div>
-                    <div class="form-group">
-                        <label for="goToSleep">Go to Sleep</label>
-                        <input type="time" id="goToSleep">
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-section">
-                <h3 onclick="toggleSection(this)">Medications & Supplements</h3>
+                <h3>Medications & Supplements</h3>
                 <div class="medications-grid">
 
                     <!-- MORNING -->
@@ -892,7 +861,7 @@
 
                 </div>
 
-                <h3 onclick="toggleSection(this)">Diet & Nutrition</h3>
+                <h3>Diet & Nutrition</h3>
                 <div class="form-grid">
                     <div class="form-group">
                         <label for="weight">Weight</label>
@@ -968,7 +937,7 @@
             </div>
 
             <div class="form-section">
-                <h3 onclick="toggleSection(this)">Exercise</h3>
+                <h3>Exercise</h3>
                 <div class="form-group">
                     <label for="routine">Routine Description</label>
                     <textarea id="routine"></textarea>
@@ -1011,7 +980,7 @@
             </div>
 
             <div class="form-section">
-                <h3 onclick="toggleSection(this)">Ailments (0-10 Scale)</h3>
+                <h3>Ailments (0-10 Scale)</h3>
                 <div class="form-grid">
                     <div class="form-group">
                         <label for="headache">Headache</label>
@@ -1050,7 +1019,7 @@
             </div>
 
             <div class="form-section">
-                <h3 onclick="toggleSection(this)">Energy, Agitation, Anxiety & Depression Tracking</h3>
+                <h3>Energy, Agitation, Anxiety & Depression Tracking</h3>
                 <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
                     <button onclick="logEnergy()">⚡ Log Current Energy</button>
                     <button onclick="logAgitation()" style="background: #f59e0b;">😤 Log Current Agitation</button>
@@ -1064,22 +1033,14 @@
             </div>
 
             <div class="form-section">
-                <h3 onclick="toggleSection(this)">Notes</h3>
+                <h3>Notes</h3>
                 <div class="form-group">
                     <textarea id="notes" placeholder="Any additional notes for the day..."></textarea>
-                </div>
-                <div class="form-group" style="margin-top: 1rem;">
-                    <label for="rateDay">Rate the Day (0-10)</label>
-                    <div class="number-input-group">
-                        <button type="button" onclick="adjustDiet('rateDay', -1)">−</button>
-                        <input type="number" id="rateDay" min="0" max="10" step="1" value="0">
-                        <button type="button" onclick="adjustDiet('rateDay', 1)">+</button>
-                    </div>
                 </div>
             </div>
 
             <div class="form-section">
-                <h3 onclick="toggleSection(this)">Media</h3>
+                <h3>Media</h3>
                 <div class="form-grid">
                     <div class="form-group">
                         <label for="amazon">Amazon Prime (hours)</label>
@@ -1481,17 +1442,6 @@
     </div>
 
     <script>
-        function toggleSection(h3El) {
-            h3El.classList.toggle('collapsed');
-            const isCollapsed = h3El.classList.contains('collapsed');
-            let el = h3El.nextElementSibling;
-            while (el) {
-                if (el.tagName === 'H3') break;
-                el.style.display = isCollapsed ? 'none' : '';
-                el = el.nextElementSibling;
-            }
-        }
-
         // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyCOkn1TUMnMQLpipLaBj3joU18-X9_YY9A",
@@ -1618,8 +1568,6 @@
                     // Diet
                     weight: document.getElementById('weight').value,
                     diet: document.getElementById('diet').value,
-                    wakeUp: document.getElementById('wakeUp').value,
-                    goToSleep: document.getElementById('goToSleep').value,
                     startEating: document.getElementById('startEating').value,
                     endEating: document.getElementById('endEating').value,
                     fasting: document.getElementById('fasting').value,
@@ -1653,7 +1601,6 @@
                     depression: getCurrentDepressionLog(),
                     // Notes
                     notes: document.getElementById('notes').value,
-                    rateDay: document.getElementById('rateDay').value,
                     // Media
                     appleTv: parseFloat(document.getElementById('appleTv').value) || 0,
                     netflix: parseFloat(document.getElementById('netflix').value) || 0,
@@ -1759,8 +1706,6 @@
                 
                 document.getElementById('weight').value = entry.weight || '';
                 document.getElementById('diet').value = entry.diet || '';
-                document.getElementById('wakeUp').value = entry.wakeUp || '';
-                document.getElementById('goToSleep').value = entry.goToSleep || '';
                 document.getElementById('startEating').value = entry.startEating || '';
                 document.getElementById('endEating').value = entry.endEating || '';
                 document.getElementById('water').value = entry.water || '';
@@ -1790,7 +1735,6 @@
                 document.getElementById('sinusesValue').textContent = entry.sinuses || 0;
                 
                 document.getElementById('notes').value = entry.notes || '';
-                document.getElementById('rateDay').value = entry.rateDay || '';
                 
                 console.log('📂 Loading media for date:', date);
                 console.log('📂 Media values from entry:', {
@@ -3548,7 +3492,9 @@
                     <col style="width:2%">
                     <col style="width:5%">
                     <col style="width:5%">
-                    <col style="width:67%">
+                    <col style="width:61%">
+                    <col style="width:3%">
+                    <col style="width:3%">
                     <col style="width:5%">
                     <col style="width:5%">
                 </colgroup>
@@ -3561,13 +3507,15 @@
                     <th>Exercise</th>
                     <th>Fasting</th>
                     <th>Diet</th>
+                    <th style="text-align:center;" title="Alcohol">🍺</th>
+                    <th style="text-align:center;" title="Nicotine">🚬</th>
                     <th style="text-align:center;">🍕</th>
                     <th style="text-align:center;">🍰</th>
                 </tr></thead>
                 <tbody>`;
 
             if (data.length === 0) {
-                tableHtml += '<tr><td colspan="10" style="text-align:center;color:var(--secondary);padding:2rem;">No entries found for this date range</td></tr>';
+                tableHtml += '<tr><td colspan="12" style="text-align:center;color:var(--secondary);padding:2rem;">No entries found for this date range</td></tr>';
             } else {
                 data.forEach(entry => {
                     const fasting = entry.fasting ? entry.fasting.toString().replace(/\s*hours?/i, '') : '—';
@@ -3580,6 +3528,8 @@
                         <td style="font-size:0.85rem;">${entry.exercise || '—'}</td>
                         <td style="font-size:0.85rem;white-space:nowrap;">${fasting}</td>
                         <td style="font-size:0.85rem;word-break:break-word;">${entry.diet || '—'}</td>
+                        <td style="text-align:center;font-size:0.85rem;">${entry.alcohol > 0 ? entry.alcohol : '—'}</td>
+                        <td style="text-align:center;font-size:0.85rem;">${entry.nicotine > 0 ? entry.nicotine : '—'}</td>
                         <td style="text-align:center;">${entry.cheatMeal ? '✓' : '—'}</td>
                         <td style="text-align:center;">${entry.cheatDessert ? '✓' : '—'}</td>
                     </tr>`;
@@ -3593,7 +3543,7 @@
                 <span style="font-size:0.875rem;">${value}</span>
             </div>`;
 
-            let cardsHtml = '<div class="history-complete-mobile" style="display:flex;flex-direction:column;gap:1rem;">';
+            let cardsHtml = '<div class="history-complete-mobile" style="flex-direction:column;gap:1rem;">';
             if (data.length === 0) {
                 cardsHtml += '<p style="text-align:center;color:var(--secondary);padding:2rem;">No entries found</p>';
             } else {
@@ -3605,6 +3555,8 @@
                         ${mrow('Exercise', entry.exercise || '—')}
                         ${mrow('Fasting', fasting)}
                         ${mrow('Diet', entry.diet || '—')}
+                        ${entry.alcohol > 0 ? mrow('🍺 Alcohol', entry.alcohol) : ''}
+                        ${entry.nicotine > 0 ? mrow('🚬 Nicotine', entry.nicotine) : ''}
                         ${mrow('Cheat Meal', entry.cheatMeal ? '✓' : '—')}
                         ${mrow('Cheat Dessert', entry.cheatDessert ? '✓' : '—')}
                         ${hasEmotion(entry.energy) ? mrow('⚡ Energy', entry.energy.map(e=>e.level+'/10').join(', ')) : ''}
@@ -3722,8 +3674,6 @@
                 // Diet
                 document.getElementById('weight').value = entry.weight || '';
                 document.getElementById('diet').value = entry.diet || '';
-                document.getElementById('wakeUp').value = entry.wakeUp || '';
-                document.getElementById('goToSleep').value = entry.goToSleep || '';
                 document.getElementById('startEating').value = entry.startEating || '';
                 document.getElementById('endEating').value = entry.endEating || '';
                 calculateFasting(); // Calculate after loading times
@@ -3757,7 +3707,6 @@
                 
                 // Notes
                 document.getElementById('notes').value = entry.notes || '';
-                document.getElementById('rateDay').value = entry.rateDay || '';
                 
                 // Energy
                 displayEnergyLog(entry.energy || []);
