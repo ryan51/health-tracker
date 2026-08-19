@@ -766,6 +766,20 @@
             </div>
             
             <div class="form-section">
+                <h3 onclick="toggleSection(this)">Sleep</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="wakeUp">Wake Up</label>
+                        <input type="time" id="wakeUp">
+                    </div>
+                    <div class="form-group">
+                        <label for="goToSleep">Go to Sleep</label>
+                        <input type="time" id="goToSleep">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
                 <h3>Medications & Supplements</h3>
                 <div class="medications-grid">
 
@@ -1570,6 +1584,8 @@
                     // Diet
                     weight: document.getElementById('weight').value,
                     diet: document.getElementById('diet').value,
+                    wakeUp: document.getElementById('wakeUp').value,
+                    goToSleep: document.getElementById('goToSleep').value,
                     startEating: document.getElementById('startEating').value,
                     endEating: document.getElementById('endEating').value,
                     fasting: document.getElementById('fasting').value,
@@ -1708,6 +1724,8 @@
                 
                 document.getElementById('weight').value = entry.weight || '';
                 document.getElementById('diet').value = entry.diet || '';
+                document.getElementById('wakeUp').value = entry.wakeUp || '';
+                document.getElementById('goToSleep').value = entry.goToSleep || '';
                 document.getElementById('startEating').value = entry.startEating || '';
                 document.getElementById('endEating').value = entry.endEating || '';
                 document.getElementById('water').value = entry.water || '';
@@ -3714,6 +3732,8 @@
                 // Diet
                 document.getElementById('weight').value = entry.weight || '';
                 document.getElementById('diet').value = entry.diet || '';
+                document.getElementById('wakeUp').value = entry.wakeUp || '';
+                document.getElementById('goToSleep').value = entry.goToSleep || '';
                 document.getElementById('startEating').value = entry.startEating || '';
                 document.getElementById('endEating').value = entry.endEating || '';
                 calculateFasting(); // Calculate after loading times
