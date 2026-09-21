@@ -777,24 +777,100 @@
         <div id="dailyView" class="view active">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
                 <div style="display: flex; align-items: center; gap: 1rem;">
-                    <h2 style="margin: 0;">Daily Entry for</h2>
+                    <h2 style="margin: 0;">Daily Entry</h2>
                     <input type="date" id="datePicker" onchange="changeDate()" style="padding: 0.5rem; border: 2px solid #4285f4; border-radius: 2px; font-size: 1rem; cursor: pointer;">
                 </div>
                 <button onclick="saveEntry()" style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 2px; font-weight: 600; cursor: pointer;">Save Entry</button>
             </div>
             
             <div class="form-section">
-                <h3 onclick="toggleSection(this)">Sleep</h3>
+                <h3 onclick="toggleSection(this)">Energy, Agitation, Anxiety & Depression Tracking</h3>
+                <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
+                    <button onclick="logEnergy()">⚡ Log Current Energy</button>
+                    <button onclick="logAgitation()" style="background: #f59e0b;">😤 Log Current Agitation</button>
+                    <button onclick="logAnxiety()" style="background: #8b5cf6;">😰 Log Current Anxiety</button>
+                    <button onclick="logDepression()" style="background: #6366f1;">😔 Log Current Depression</button>
+                </div>
+                <div id="energyLog" class="energy-log" style="display: none;"></div>
+                <div id="agitationLog" class="energy-log" style="display: none;"></div>
+                <div id="anxietyLog" class="energy-log" style="display: none;"></div>
+                <div id="depressionLog" class="energy-log" style="display: none;"></div>
+            </div>
+
+            <div class="form-section">
+                <h3 onclick="toggleSection(this)">Diet & Nutrition</h3>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label for="wakeUp">Wake Up</label>
-                        <input type="time" id="wakeUp">
-                    </div>
-                    <div class="form-group">
-                        <label for="goToSleep">Go to Sleep</label>
-                        <input type="time" id="goToSleep">
+                        <label for="weight">Weight</label>
+                        <input type="number" id="weight" step="0.1">
                     </div>
                 </div>
+                
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label for="diet">Diet Notes</label>
+                    <textarea id="diet" rows="3" style="width: 100%; resize: vertical;"></textarea>
+                </div>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="startEating">Start Eating</label>
+                        <input type="time" id="startEating" oninput="calculateFasting()" onchange="calculateFasting()">
+                    </div>
+                    <div class="form-group">
+                        <label for="endEating">End Eating</label>
+                        <input type="time" id="endEating" oninput="calculateFasting()" onchange="calculateFasting()">
+                    </div>
+                    <div class="form-group">
+                        <label>Fasting Hours (auto-calc)</label>
+                        <input type="text" id="fasting" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="water">Water (oz)</label>
+                        <div class="number-input-group">
+                            <button type="button" onclick="adjustDiet('water', -8)">−</button>
+                            <input type="number" id="water" min="0" max="200" step="8" value="0">
+                            <button type="button" onclick="adjustDiet('water', 8)">+</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="protein">Protein (g)</label>
+                        <div class="number-input-group">
+                            <button type="button" onclick="adjustDiet('protein', -10)">−</button>
+                            <input type="number" id="protein" min="0" max="300" step="10" value="0">
+                            <button type="button" onclick="adjustDiet('protein', 10)">+</button>
+                        </div>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="carbs">
+                        <label for="carbs">Carbs (&lt;50g)</label>
+                    </div>
+                    <div class="form-group">
+                        <label for="alcohol">Alcohol (0-10)</label>
+                        <div class="number-input-group">
+                            <button type="button" onclick="adjustDiet('alcohol', -1)">−</button>
+                            <input type="number" id="alcohol" min="0" max="10" step="1" value="0">
+                            <button type="button" onclick="adjustDiet('alcohol', 1)">+</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="nicotine">Nicotine (0-6)</label>
+                        <div class="number-input-group">
+                            <button type="button" onclick="adjustDiet('nicotine', -1)">−</button>
+                            <input type="number" id="nicotine" min="0" max="6" step="1" value="0">
+                            <button type="button" onclick="adjustDiet('nicotine', 1)">+</button>
+                        </div>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="cheatMeal">
+                        <label for="cheatMeal">Cheat Meal</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="cheatDessert">
+                        <label for="cheatDessert">Cheat Dessert</label>
+                    </div>
+                </div>
+                
             </div>
 
             <div class="form-section">
@@ -892,80 +968,20 @@
                             </div>
 
                 </div>
+            </div>
 
-                <h3 onclick="toggleSection(this)">Diet & Nutrition</h3>
+            <div class="form-section">
+                <h3 onclick="toggleSection(this)">Sleep</h3>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label for="weight">Weight</label>
-                        <input type="number" id="weight" step="0.1">
+                        <label for="wakeUp">Wake Up</label>
+                        <input type="time" id="wakeUp">
+                    </div>
+                    <div class="form-group">
+                        <label for="goToSleep">Go to Sleep</label>
+                        <input type="time" id="goToSleep">
                     </div>
                 </div>
-                
-                <div class="form-group" style="grid-column: 1 / -1;">
-                    <label for="diet">Diet Notes</label>
-                    <textarea id="diet" rows="3" style="width: 100%; resize: vertical;"></textarea>
-                </div>
-                
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="startEating">Start Eating</label>
-                        <input type="time" id="startEating" oninput="calculateFasting()" onchange="calculateFasting()">
-                    </div>
-                    <div class="form-group">
-                        <label for="endEating">End Eating</label>
-                        <input type="time" id="endEating" oninput="calculateFasting()" onchange="calculateFasting()">
-                    </div>
-                    <div class="form-group">
-                        <label>Fasting Hours (auto-calc)</label>
-                        <input type="text" id="fasting" readonly>
-                    </div>
-                    <div class="form-group">
-                        <label for="water">Water (oz)</label>
-                        <div class="number-input-group">
-                            <button type="button" onclick="adjustDiet('water', -8)">−</button>
-                            <input type="number" id="water" min="0" max="200" step="8" value="0">
-                            <button type="button" onclick="adjustDiet('water', 8)">+</button>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="protein">Protein (g)</label>
-                        <div class="number-input-group">
-                            <button type="button" onclick="adjustDiet('protein', -10)">−</button>
-                            <input type="number" id="protein" min="0" max="300" step="10" value="0">
-                            <button type="button" onclick="adjustDiet('protein', 10)">+</button>
-                        </div>
-                    </div>
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="carbs">
-                        <label for="carbs">Carbs (&lt;50g)</label>
-                    </div>
-                    <div class="form-group">
-                        <label for="alcohol">Alcohol (0-10)</label>
-                        <div class="number-input-group">
-                            <button type="button" onclick="adjustDiet('alcohol', -1)">−</button>
-                            <input type="number" id="alcohol" min="0" max="10" step="1" value="0">
-                            <button type="button" onclick="adjustDiet('alcohol', 1)">+</button>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="nicotine">Nicotine (0-6)</label>
-                        <div class="number-input-group">
-                            <button type="button" onclick="adjustDiet('nicotine', -1)">−</button>
-                            <input type="number" id="nicotine" min="0" max="6" step="1" value="0">
-                            <button type="button" onclick="adjustDiet('nicotine', 1)">+</button>
-                        </div>
-                    </div>
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="cheatMeal">
-                        <label for="cheatMeal">Cheat Meal</label>
-                    </div>
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="cheatDessert">
-                        <label for="cheatDessert">Cheat Dessert</label>
-                    </div>
-                </div>
-                
             </div>
 
             <div class="form-section">
@@ -1048,20 +1064,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <div class="form-section">
-                <h3 onclick="toggleSection(this)">Energy, Agitation, Anxiety & Depression Tracking</h3>
-                <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
-                    <button onclick="logEnergy()">⚡ Log Current Energy</button>
-                    <button onclick="logAgitation()" style="background: #f59e0b;">😤 Log Current Agitation</button>
-                    <button onclick="logAnxiety()" style="background: #8b5cf6;">😰 Log Current Anxiety</button>
-                    <button onclick="logDepression()" style="background: #6366f1;">😔 Log Current Depression</button>
-                </div>
-                <div id="energyLog" class="energy-log" style="display: none;"></div>
-                <div id="agitationLog" class="energy-log" style="display: none;"></div>
-                <div id="anxietyLog" class="energy-log" style="display: none;"></div>
-                <div id="depressionLog" class="energy-log" style="display: none;"></div>
             </div>
 
             <div class="form-section">
