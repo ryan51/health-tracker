@@ -1065,11 +1065,8 @@
             </div>
 
             <div class="form-section">
-                <h3 onclick="toggleSection(this)">Notes</h3>
+                <h3 onclick="toggleSection(this)">Rate the Day</h3>
                 <div class="form-group">
-                    <textarea id="notes" placeholder="Any additional notes for the day..."></textarea>
-                </div>
-                <div class="form-group" style="margin-top: 1rem;">
                     <label for="rateDay">Rate the Day (0-10)</label>
                     <div class="number-input-group">
                         <button type="button" onclick="adjustDiet('rateDay', -1)">−</button>
@@ -1730,7 +1727,10 @@
                 let html = '';
                 html += `<div style="display:flex; align-items:center; justify-content: space-between; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;">
                     <span style="color: var(--secondary); font-size: 0.875rem;">${untaggedCount} untagged note${untaggedCount === 1 ? '' : 's'}</span>
-                    <button onclick="categorizeQuickNotes()" ${untaggedCount === 0 ? 'disabled' : ''} style="padding: 0.6rem 1.1rem; background: ${untaggedCount === 0 ? '#c3c4c7' : 'var(--primary)'}; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: ${untaggedCount === 0 ? 'default' : 'pointer'};">🏷️ Categorize Notes</button>
+                    <div style="display:flex; gap:0.5rem; flex-wrap: wrap;">
+                        <button onclick="migrateOldNotes()" style="padding: 0.6rem 1.1rem; background: white; color: var(--text); border: 1px solid var(--border); border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.8rem;">⏮️ Migrate Old Notes</button>
+                        <button onclick="categorizeQuickNotes()" ${untaggedCount === 0 ? 'disabled' : ''} style="padding: 0.6rem 1.1rem; background: ${untaggedCount === 0 ? '#c3c4c7' : 'var(--primary)'}; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: ${untaggedCount === 0 ? 'default' : 'pointer'};">🏷️ Categorize Notes</button>
+                    </div>
                 </div>`;
 
                 quickNotesCache.forEach(note => {
@@ -1771,6 +1771,52 @@
         // tag vocabulary to a small backend proxy that calls the Anthropic API
         // (the API key must never live in this client-side file).
         const QUICK_NOTE_CATEGORIZE_ENDPOINT = 'https://categorizenotes-6x6madfdxq-uc.a.run.app';
+
+        // One-time migration: move the old per-day "notes" field into the
+        // Quick Notes system, untagged, so nothing is lost. Safe to run more
+        // than once — it skips days already migrated.
+        async function migrateOldNotes() {
+            if (!confirm('This will copy every old daily "Notes" entry into Quick Notes (untagged). Continue?')) return;
+
+            try {
+                const snapshot = await healthCollection.get();
+                let migrated = 0, skipped = 0;
+
+                for (const doc of snapshot.docs) {
+                    const entry = doc.data();
+                    if (!entry.notes || !entry.notes.trim()) continue;
+
+                    // Skip if this exact day/text was already migrated
+                    const existing = await quickNotesCollection
+                        .where('date', '==', entry.date)
+                        .where('source', '==', 'migrated')
+                        .where('text', '==', entry.notes)
+                        .limit(1)
+                        .get();
+                    if (!existing.empty) { skipped++; continue; }
+
+                    await quickNotesCollection.add({
+                        text: entry.notes,
+                        tags: [],
+                        freeformTags: [],
+                        categorized: false,
+                        source: 'migrated',
+                        date: entry.date,
+                        createdAt: firebase.firestore.Timestamp.fromDate(new Date(entry.date + 'T12:00:00'))
+                    });
+                    migrated++;
+                }
+
+                alert(`Migration complete.\n\nMigrated: ${migrated}\nAlready migrated (skipped): ${skipped}`);
+
+                if (document.getElementById('notesView') && document.getElementById('notesView').classList.contains('active')) {
+                    loadQuickNotesHistory();
+                }
+            } catch (error) {
+                console.error('Error migrating old notes:', error);
+                alert('Error migrating notes: ' + error.message);
+            }
+        }
 
         async function categorizeQuickNotes() {
             const untagged = quickNotesCache.filter(n => !n.tags || n.tags.length === 0);
@@ -1942,7 +1988,7 @@
                     // Depression
                     depression: getCurrentDepressionLog(),
                     // Notes
-                    notes: document.getElementById('notes').value,
+                    // Notes moved to Quick Notes system
                     rateDay: document.getElementById('rateDay').value,
                     // Media
                     appleTv: parseFloat(document.getElementById('appleTv').value) || 0,
@@ -2079,7 +2125,6 @@
                 document.getElementById('sinuses').value = entry.sinuses || 0;
                 document.getElementById('sinusesValue').textContent = entry.sinuses || 0;
                 
-                document.getElementById('notes').value = entry.notes || '';
                 document.getElementById('rateDay').value = entry.rateDay || 0;
                 
                 console.log('📂 Loading media for date:', date);
@@ -3770,18 +3815,6 @@
         }
 
 
-        function loadNotesHistory() {
-            const container = document.getElementById('notesHistory');
-            let html = '<table class="history-table"><thead><tr><th>Date</th><th>Notes</th><th>Actions</th></tr></thead><tbody>';
-            healthData.forEach(entry => {
-                if (entry.notes) {
-                    html += `<tr><td>${entry.date}</td><td>${entry.notes}</td><td><button onclick="editEntry('${entry.date}')" style="padding: 0.25rem 0.75rem; background: #4285f4; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 0.875rem;">Edit</button></td></tr>`;
-                }
-            });
-            html += '</tbody></table>';
-            container.innerHTML = html;
-        }
-
         function loadMediaHistory() {
             const container = document.getElementById('mediaHistory');
             let html = '<table class="history-table"><thead><tr><th>Date</th><th>Apple TV+</th><th>Netflix</th><th>Paramount</th><th>Amazon</th><th>YouTube</th><th>YouTube TV</th><th>Actions</th></tr></thead><tbody>';
@@ -4091,8 +4124,7 @@
                 document.getElementById('stomach').value = entry.stomach || 0;
                 document.getElementById('sinuses').value = entry.sinuses || 0;
                 
-                // Notes
-                document.getElementById('notes').value = entry.notes || '';
+                // Rate the Day
                 document.getElementById('rateDay').value = entry.rateDay || 0;
                 
                 // Energy
