@@ -1247,17 +1247,19 @@
 
         <div id="energyView" class="view">
             <button onclick="showView('settings')" class="secondary" style="margin-bottom: 1rem;">← Back to Settings</button>
-            
+
             <!-- Sub-navigation for Settings sections -->
             <div style="display: flex; gap: 0.5rem; margin: 1rem 0; padding: 0.5rem; background: white; border-radius: 2px; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); overflow-x: auto;">
                 <button onclick="showView('settings')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">⚙️ Settings</button>
                 <button onclick="showView('energy')" style="padding: 0.75rem 1.25rem; background: var(--primary); color: white; border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">⚡ Energy</button>
                 <button onclick="showView('agitation')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😤 Agitation</button>
                 <button onclick="showView('anxiety')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😰 Anxiety</button>
+                <button onclick="showView('depression')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😔 Depression</button>
+                <button onclick="showView('weightsHistory')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">🏋️ Weights</button>
                 <button onclick="showView('notes')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📝 Notes</button>
                 <button onclick="showView('history')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📋 History</button>
             </div>
-            
+
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
                 <div style="display: flex; align-items: center; gap: 1rem;">
                     <h2 style="margin: 0;">⚡ Energy Tracking for</h2>
@@ -1280,13 +1282,15 @@
         <!-- Agitation View -->
         <div id="agitationView" class="view">
             <button onclick="showView('settings')" class="secondary" style="margin-bottom: 1rem;">← Back to Settings</button>
-            
+
             <!-- Sub-navigation for Settings sections -->
             <div style="display: flex; gap: 0.5rem; margin: 1rem 0; padding: 0.5rem; background: white; border-radius: 2px; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); overflow-x: auto;">
                 <button onclick="showView('settings')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">⚙️ Settings</button>
                 <button onclick="showView('energy')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">⚡ Energy</button>
                 <button onclick="showView('agitation')" style="padding: 0.75rem 1.25rem; background: var(--primary); color: white; border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😤 Agitation</button>
                 <button onclick="showView('anxiety')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😰 Anxiety</button>
+                <button onclick="showView('depression')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😔 Depression</button>
+                <button onclick="showView('weightsHistory')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">🏋️ Weights</button>
                 <button onclick="showView('notes')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📝 Notes</button>
                 <button onclick="showView('history')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📋 History</button>
             </div>
@@ -1313,13 +1317,15 @@
         <!-- Anxiety View -->
         <div id="anxietyView" class="view">
             <button onclick="showView('settings')" class="secondary" style="margin-bottom: 1rem;">← Back to Settings</button>
-            
+
             <!-- Sub-navigation for Settings sections -->
             <div style="display: flex; gap: 0.5rem; margin: 1rem 0; padding: 0.5rem; background: white; border-radius: 2px; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); overflow-x: auto;">
                 <button onclick="showView('settings')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">⚙️ Settings</button>
                 <button onclick="showView('energy')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">⚡ Energy</button>
                 <button onclick="showView('agitation')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😤 Agitation</button>
                 <button onclick="showView('anxiety')" style="padding: 0.75rem 1.25rem; background: var(--primary); color: white; border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😰 Anxiety</button>
+                <button onclick="showView('depression')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😔 Depression</button>
+                <button onclick="showView('weightsHistory')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">🏋️ Weights</button>
                 <button onclick="showView('notes')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📝 Notes</button>
                 <button onclick="showView('history')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📋 History</button>
             </div>
@@ -1353,10 +1359,11 @@
                 <button onclick="showView('agitation')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😤 Agitation</button>
                 <button onclick="showView('anxiety')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😰 Anxiety</button>
                 <button onclick="showView('depression')" style="padding: 0.75rem 1.25rem; background: var(--primary); color: white; border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😔 Depression</button>
+                <button onclick="showView('weightsHistory')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">🏋️ Weights</button>
                 <button onclick="showView('notes')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📝 Notes</button>
                 <button onclick="showView('history')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📋 History</button>
             </div>
-            
+
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
                 <div style="display: flex; align-items: center; gap: 1rem;">
                     <h2 style="margin: 0;">😔 Depression Tracking for</h2>
@@ -1475,10 +1482,12 @@
                 <button onclick="showView('energy')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">⚡ Energy</button>
                 <button onclick="showView('agitation')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😤 Agitation</button>
                 <button onclick="showView('anxiety')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😰 Anxiety</button>
+                <button onclick="showView('depression')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😔 Depression</button>
+                <button onclick="showView('weightsHistory')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">🏋️ Weights</button>
                 <button onclick="showView('notes')" style="padding: 0.75rem 1.25rem; background: var(--primary); color: white; border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📝 Notes</button>
                 <button onclick="showView('history')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📋 History</button>
             </div>
-            
+
             <h2>📝 Quick Notes</h2>
             <p style="color: var(--secondary); font-size: 0.875rem; margin-top: -0.5rem; margin-bottom: 1rem;">Captured via the + button. Tag them yourself or batch-categorize later.</p>
             <div id="notesHistory"></div>
@@ -1499,7 +1508,7 @@
                 <button onclick="showView('agitation')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😤 Agitation</button>
                 <button onclick="showView('anxiety')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😰 Anxiety</button>
                 <button onclick="showView('depression')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">😔 Depression</button>
-                <button onclick="showView('weights')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">🏋️ Weights</button>
+                <button onclick="showView('weightsHistory')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">🏋️ Weights</button>
                 <button onclick="showView('notes')" style="padding: 0.75rem 1.25rem; background: transparent; color: var(--secondary); border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📝 Notes</button>
                 <button onclick="showView('history')" style="padding: 0.75rem 1.25rem; background: var(--primary); color: white; border: none; border-radius: 2px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; cursor: pointer;">📋 History</button>
             </div>
